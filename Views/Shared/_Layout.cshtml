@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - TrasladosPeru</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a class="brand" href="/">🚚 TrasladosPerú</a>
+            <nav>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a href="/Recorrido">Recorridos</a>
+                    <span style="color:rgba(255,255,255,0.7); margin: 0 8px;">@User.Identity.Name</span>
+                    <a href="/Cuenta/Salir">Salir</a>
+                }
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        TrasladosPerú &middot; Panel de control de operaciones
+    </footer>
+</body>
+</html>

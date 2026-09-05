@@ -1,0 +1,169 @@
+@model NuevoViajeForm
+@{
+    ViewData["Title"] = "Nuevo viaje";
+    var clientes = (IEnumerable<OpcionSelect>)ViewBag.Clientes;
+    var choferes = (IEnumerable<OpcionSelect>)ViewBag.Choferes;
+    var ayudantes = (IEnumerable<OpcionSelect>)ViewBag.Ayudantes;
+    var unidades = (IEnumerable<OpcionSelect>)ViewBag.Unidades;
+    var tiposCarga = (string[])ViewBag.TiposCarga;
+    bool esAdmin = ViewBag.EsAdmin ?? false;
+    string miDni = ViewBag.MiDni ?? "";
+    string miNombre = ViewBag.MiNombre ?? "";
+}
+
+<div class="page-header">
+    <h1>Nuevo viaje</h1>
+</div>
+
+<div class="card form-card">
+    <div asp-validation-summary="All" class="validation-summary"></div>
+
+    <form asp-controller="Recorrido" asp-action="Crear" method="post">
+        <h3 class="seccion">Personal y unidad</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Chofer</label>
+                @if (esAdmin)
+                {
+                    <select asp-for="DniChofer" class="input">
+                        <option value="">-- Selecciona --</option>
+                        @foreach (var c in choferes)
+                        {
+                            <option value="@c.Codigo">@c.Texto</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <input class="input" value="@miNombre" disabled />
+                    <input type="hidden" asp-for="DniChofer" value="@miDni" />
+                }
+            </div>
+
+            <div class="form-group">
+                <label>Ayudante</label>
+                <select asp-for="DniAyudante" class="input">
+                    <option value="">-- Sin ayudante (chofer solo) --</option>
+                    @foreach (var a in ayudantes)
+                    {
+                        <option value="@a.Codigo">@a.Texto</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Unidad (placa)</label>
+                <select asp-for="CodigoUnidad" class="input">
+                    <option value="">-- Selecciona --</option>
+                    @foreach (var u in unidades)
+                    {
+                        <option value="@u.Codigo">@u.Texto</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Cliente</label>
+                <select asp-for="Ruc" class="input" onchange="document.getElementById('otroClienteBox').style.display = this.value === '' ? 'block' : 'none';">
+                    <option value="">-- Otro (escribir abajo) --</option>
+                    @foreach (var c in clientes)
+                    {
+                        <option value="@c.Codigo">@c.Texto</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group" id="otroClienteBox">
+                <label>Si es "Otro", escribe el nombre del cliente</label>
+                <input asp-for="ClienteOtro" class="input" placeholder="Nombre de la empresa" />
+            </div>
+        </div>
+
+        <h3 class="seccion">Costo</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Costo del servicio (S/)</label>
+                @if (esAdmin)
+                {
+                    <input asp-for="Costo" type="number" step="0.01" class="input" placeholder="Ej: 350.00" />
+                }
+                else
+                {
+                    <input class="input" value="Solo Gina puede fijar el costo" disabled />
+                }
+            </div>
+
+            <div class="form-group">
+                <label>Costo adicional (S/)</label>
+                @if (esAdmin)
+                {
+                    <input asp-for="CostoAdicional" type="number" step="0.01" class="input" placeholder="Ej: 50.00 (peaje, espera, etc.)" />
+                }
+                else
+                {
+                    <input class="input" value="Solo Gina puede fijar el costo adicional" disabled />
+                }
+            </div>
+        </div>
+
+        <h3 class="seccion">Carga</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Tipo de carga</label>
+                <select asp-for="TipoCargamento" class="input">
+                    <option value="">-- Selecciona --</option>
+                    @foreach (var t in tiposCarga)
+                    {
+                        <option value="@t">@t</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Peso (kg)</label>
+                <input asp-for="Peso" type="number" step="0.01" class="input" placeholder="Ej: 850.50" />
+            </div>
+        </div>
+
+        <h3 class="seccion">Ruta</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Punto de inicio</label>
+                <input asp-for="PuntoInicio" class="input" placeholder="Ej: Lurín" />
+            </div>
+
+            <div class="form-group">
+                <label>Punto final</label>
+                <input asp-for="PuntoFin" class="input" placeholder="Ej: San Martín de Porres" />
+            </div>
+        </div>
+
+        <h3 class="seccion">Horarios y kilometraje</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Fecha y hora de inicio</label>
+                <input asp-for="FechaInicio" type="datetime-local" class="input" />
+            </div>
+
+            <div class="form-group">
+                <label>Fecha y hora de fin</label>
+                <input asp-for="FechaFin" type="datetime-local" class="input" />
+            </div>
+
+            <div class="form-group">
+                <label>Kilometraje inicial</label>
+                <input asp-for="KilometrajeInicial" type="number" class="input" placeholder="Ej: 15200" />
+            </div>
+
+            <div class="form-group">
+                <label>Kilometraje final</label>
+                <input asp-for="KilometrajeFinal" type="number" class="input" placeholder="Ej: 15340" />
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="/Recorrido" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar viaje</button>
+        </div>
+    </form>
+</div>

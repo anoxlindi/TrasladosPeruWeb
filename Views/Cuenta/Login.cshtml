@@ -1,0 +1,73 @@
+@model LoginForm
+@{
+    ViewData["Title"] = "Iniciar sesión";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar sesión - Traslados Perú</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        body.login-bg {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                linear-gradient(160deg, rgba(6,20,40,0.88), rgba(9,54,94,0.88)),
+                repeating-linear-gradient(135deg, #0c2440 0px, #0c2440 40px, #123458 40px, #123458 80px);
+            padding: 24px;
+        }
+        .login-card {
+            width: 380px;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+        }
+        .login-banner {
+            width: 100%;
+            display: block;
+        }
+        .login-body { padding: 28px 32px 32px; }
+        .login-tagline {
+            text-align: center;
+            color: var(--gris);
+            font-size: 0.82rem;
+            margin: -6px 0 20px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body class="login-bg">
+    <div class="login-card">
+        <img src="~/img/banner-traslados.png" alt="Traslados Perú" class="login-banner" />
+        <div class="login-body">
+            <p class="login-tagline">Panel de control de operaciones</p>
+
+            <div asp-validation-summary="All" class="validation-summary"></div>
+            @if (TempData["Mensaje"] != null)
+            {
+                <p style="color:#16794f; font-size:0.9rem;">@TempData["Mensaje"]</p>
+            }
+
+            <form asp-controller="Cuenta" asp-action="Login" method="post">
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label>DNI</label>
+                    <input asp-for="Dni" class="input" placeholder="Ej: 07452723" autofocus />
+                </div>
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label>Contraseña</label>
+                    <input asp-for="Password" type="password" class="input" />
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Entrar</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

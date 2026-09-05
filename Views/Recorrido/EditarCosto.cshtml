@@ -1,0 +1,57 @@
+@model ReporteRecorridoDto
+@{
+    ViewData["Title"] = "Completar costo";
+}
+
+<div class="page-header">
+    <h1>Completar costo del viaje #@Model.CodigoRecorrido</h1>
+</div>
+
+<div class="card form-card">
+    <h3 class="seccion">Datos del viaje (registrados por el chofer)</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label>Unidad</label>
+            <input class="input" value="@Model.Placa" disabled />
+        </div>
+        <div class="form-group">
+            <label>Chofer</label>
+            <input class="input" value="@Model.Chofer" disabled />
+        </div>
+        <div class="form-group">
+            <label>Ayudante</label>
+            <input class="input" value="@(Model.Ayudante ?? "Sin ayudante")" disabled />
+        </div>
+        <div class="form-group">
+            <label>Cliente</label>
+            <input class="input" value="@(Model.Cliente ?? "—")" disabled />
+        </div>
+        <div class="form-group">
+            <label>Ruta</label>
+            <input class="input" value="@Model.PuntoInicio → @Model.PuntoFin" disabled />
+        </div>
+        <div class="form-group">
+            <label>Km recorridos</label>
+            <input class="input" value="@Model.KilometrajeRecorrido km" disabled />
+        </div>
+    </div>
+
+    <form asp-controller="Recorrido" asp-action="EditarCosto" asp-route-id="@Model.CodigoRecorrido" method="post">
+        <h3 class="seccion">Costo (lo llena Gina)</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Costo del servicio (S/)</label>
+                <input name="Costo" type="number" step="0.01" class="input" value="@Model.Costo" placeholder="Ej: 350.00" />
+            </div>
+            <div class="form-group">
+                <label>Costo adicional (S/)</label>
+                <input name="CostoAdicional" type="number" step="0.01" class="input" value="@Model.CostoAdicional" placeholder="Ej: 50.00" />
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="/Recorrido" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar costo</button>
+        </div>
+    </form>
+</div>

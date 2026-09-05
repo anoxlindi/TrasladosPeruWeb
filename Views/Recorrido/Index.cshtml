@@ -1,0 +1,113 @@
+@model IEnumerable<ReporteRecorridoDto>
+@{
+    ViewData["Title"] = "Recorridos";
+    bool esAdmin = ViewBag.EsAdmin ?? false;
+}
+
+<div class="page-header">
+    <h1>Recorridos</h1>
+    <div class="actions">
+        <a class="btn btn-primary" href="/Recorrido/Crear">+ Nuevo viaje</a>
+        @if (esAdmin)
+        {
+            <a class="btn btn-secondary" href="/Recorrido/ExportarExcel">⭳ Exportar a Excel</a>
+        }
+    </div>
+</div>
+
+@if (esAdmin)
+{
+    var choferes = (IEnumerable<OpcionSelect>)ViewBag.Choferes;
+    var unidades = (IEnumerable<OpcionSelect>)ViewBag.Unidades;
+    var filtro = (FiltroRecorridos)ViewBag.Filtro;
+    <form method="get" class="card" style="padding:16px 20px; margin-bottom:20px; display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+        <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" name="Fecha" class="input" value="@(filtro.Fecha?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="form-group">
+            <label>Chofer</label>
+            <select name="DniChofer" class="input">
+                <option value="">-- Todos --</option>
+                @foreach (var c in choferes)
+                {
+                    <option value="@c.Codigo" selected="@(filtro.DniChofer == c.Codigo)">@c.Texto</option>
+                }
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Unidad</label>
+            <select name="CodigoUnidad" class="input">
+                <option value="">-- Todas --</option>
+                @foreach (var u in unidades)
+                {
+                    <option value="@u.Codigo" selected="@(filtro.CodigoUnidad?.ToString() == u.Codigo)">@u.Texto</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="/Recorrido" class="btn btn-secondary">Limpiar</a>
+    </form>
+}
+else
+{
+    <p style="color:var(--gris); font-size:0.9rem; margin-top:-14px; margin-bottom:20px;">
+        Mostrando solo los viajes de hoy en los que participaste.
+    </p>
+}
+
+@if (!Model.Any())
+{
+    <p class="empty-state">Todavía no hay viajes registrados. Crea el primero con el botón de arriba.</p>
+}
+else
+{
+    <div class="card" style="overflow-x:auto;">
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Unidad</th>
+                    <th>Chofer</th>
+                    <th>Ayudante</th>
+                    <th>Cliente</th>
+                    <th>Ruta</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Km recorridos</th>
+                    <th>Costo</th>
+                    <th>Costo adic.</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td>@r.CodigoRecorrido</td>
+                        <td><span class="chip">@r.Placa</span></td>
+                        <td>@(r.Chofer ?? "—")</td>
+                        <td>@(r.Ayudante ?? "—")</td>
+                        <td>@(r.Cliente ?? "—")</td>
+                        <td>@(r.PuntoInicio) → @(r.PuntoFin)</td>
+                        <td>@r.FechaInicio.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@r.FechaFin.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td><strong>@r.KilometrajeRecorrido km</strong></td>
+                        <td>@(r.Costo.HasValue ? $"S/ {r.Costo:0.00}" : "—")</td>
+                        <td>@(r.CostoAdicional.HasValue ? $"S/ {r.CostoAdicional:0.00}" : "—")</td>
+                        <td>
+                            @if (esAdmin)
+                            {
+                                <a href="/Recorrido/EditarCosto/@r.CodigoRecorrido" class="btn-icon" title="Editar costo">✏️</a>
+                            }
+                            <form asp-controller="Recorrido" asp-action="Eliminar" asp-route-id="@r.CodigoRecorrido" method="post"
+                                  onsubmit="return confirm('¿Eliminar este viaje?');" style="display:inline;">
+                                <button type="submit" class="btn-icon" title="Eliminar">🗑</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

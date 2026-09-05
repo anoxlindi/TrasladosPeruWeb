@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Para hablar con SQL Server -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
+    <!-- Dapper: para escribir consultas SQL simples y directas (no genera tablas, solo lee/escribe) -->
+    <PackageReference Include="Dapper" Version="2.1.35" />
+    <!-- ClosedXML: para generar el archivo Excel del boton "Exportar" -->
+    <PackageReference Include="ClosedXML" Version="0.104.1" />
+  </ItemGroup>
+
+</Project>
