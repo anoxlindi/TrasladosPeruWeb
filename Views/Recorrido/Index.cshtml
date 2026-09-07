@@ -75,8 +75,11 @@ else
                     <th>Inicio</th>
                     <th>Fin</th>
                     <th>Km recorridos</th>
+                    @if (esAdmin)
+{
                     <th>Costo</th>
                     <th>Costo adic.</th>
+}
                     <th></th>
                 </tr>
             </thead>
@@ -93,12 +96,15 @@ else
                         <td>@r.FechaInicio.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@r.FechaFin.ToString("dd/MM/yyyy HH:mm")</td>
                         <td><strong>@r.KilometrajeRecorrido km</strong></td>
+                        @if (esAdmin)
+{
                         <td>@(r.Costo.HasValue ? $"S/ {r.Costo:0.00}" : "—")</td>
                         <td>@(r.CostoAdicional.HasValue ? $"S/ {r.CostoAdicional:0.00}" : "—")</td>
+}
                         <td>
                             @if (esAdmin)
                             {
-                                <a href="/Recorrido/EditarCosto/@r.CodigoRecorrido" class="btn-icon" title="Editar costo">✏️</a>
+                            <a href="/Recorrido/EditarCosto/@r.CodigoRecorrido" class="btn-icon" title="Editar costo">✏️</a>
                             }
                             <form asp-controller="Recorrido" asp-action="Eliminar" asp-route-id="@r.CodigoRecorrido" method="post"
                                   onsubmit="return confirm('¿Eliminar este viaje?');" style="display:inline;">
