@@ -234,3 +234,67 @@ body {
     font-size: 0.85rem;
     padding: 24px;
 }
+/* ---------- Responsive: telefono en vertical ---------- */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px 14px 48px;
+    }
+
+    .topbar-inner {
+        padding: 12px 16px;
+    }
+
+    .brand {
+        font-size: 1.05rem;
+    }
+
+    .topbar nav a {
+        padding: 6px 8px;
+        font-size: 0.85rem;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+        .page-header h1 {
+            font-size: 1.3rem;
+        }
+
+    .actions {
+        width: 100%;
+    }
+
+        .actions .btn {
+            flex: 1;
+            text-align: center;
+        }
+
+    .form-card {
+        padding: 18px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 360px;
+    }
+
+    .tabla {
+        font-size: 0.82rem;
+    }
+
+        .tabla th, .tabla td {
+            padding: 8px 10px;
+            white-space: nowrap;
+        }
+
+    .hero h1 {
+        font-size: 1.5rem;
+    }
+}
