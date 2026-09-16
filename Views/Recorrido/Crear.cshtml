@@ -9,6 +9,7 @@
     bool esAdmin = ViewBag.EsAdmin ?? false;
     string miDni = ViewBag.MiDni ?? "";
     string miNombre = ViewBag.MiNombre ?? "";
+    string? miRol = ViewBag.MiRol;
 }
 
 <div class="page-header">
@@ -23,7 +24,7 @@
         <div class="form-grid">
             <div class="form-group">
                 <label>Chofer</label>
-                @if (esAdmin)
+                @if (esAdmin || miRol == "Ayudante")
                 {
                     <select asp-for="DniChofer" class="input">
                         <option value="">-- Selecciona --</option>
@@ -42,13 +43,21 @@
 
             <div class="form-group">
                 <label>Ayudante</label>
-                <select asp-for="DniAyudante" class="input">
-                    <option value="">-- Sin ayudante (chofer solo) --</option>
-                    @foreach (var a in ayudantes)
-                    {
-                        <option value="@a.Codigo">@a.Texto</option>
-                    }
-                </select>
+                @if (esAdmin || miRol == "Chofer")
+                {
+                    <select asp-for="DniAyudante" class="input">
+                        <option value="">-- Sin ayudante (chofer solo) --</option>
+                        @foreach (var a in ayudantes)
+                        {
+                            <option value="@a.Codigo">@a.Texto</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <input class="input" value="@miNombre" disabled />
+                    <input type="hidden" asp-for="DniAyudante" value="@miDni" />
+                }
             </div>
 
             <div class="form-group">
@@ -165,8 +174,12 @@
             <a href="/Recorrido" class="btn btn-secondary">Cancelar</a>
             <button type="submit" class="btn btn-primary">Guardar viaje</button>
         </div>
-    </form><script>
+    </form>
+</div>
+
+<script>
     // Si el campo "Fecha y hora de inicio" esta vacio, lo llena con la fecha/hora actual
+    // para que el selector del telefono abra en el dia de hoy, no en el ano 1.
     (function () {
         var campo = document.querySelector('input[name="FechaInicio"]');
         if (campo && !campo.value) {
@@ -175,4 +188,3 @@
         }
     })();
 </script>
-</div>

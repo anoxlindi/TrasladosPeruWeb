@@ -68,6 +68,19 @@ public class RecorridoRepository
         return await db.QueryAsync<OpcionSelect>(sql);
     }
 
+    // Averigua si la persona es Chofer o Ayudante de verdad (no asumir que todos son chofer)
+    public async Task<string?> ObtenerRolAsync(string dni)
+    {
+        using var db = _conexion.CrearConexion();
+        var esChofer = await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Conductor WHERE RTRIM(Dni) = @dni", new { dni });
+        if (esChofer > 0) return "Chofer";
+
+        var esAyudante = await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Asistente WHERE RTRIM(Dni) = @dni", new { dni });
+        if (esAyudante > 0) return "Ayudante";
+
+        return null;
+    }
+
     public async Task<IEnumerable<OpcionSelect>> ObtenerChoferesAsync()
     {
         using var db = _conexion.CrearConexion();

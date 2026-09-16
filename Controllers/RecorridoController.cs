@@ -50,11 +50,22 @@ public class RecorridoController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Crear(NuevoViajeForm modelo)
     {
-        // Un operador (no administrador) siempre queda como el chofer del viaje que registra,
-        // sin importar que venga o no en el formulario (los campos disabled no se envian).
+        // Segun el rol REAL de la persona (no asumir que todos son chofer):
+        // si es Chofer, se fija a si mismo en DniChofer. Si es Ayudante, se fija en DniAyudante
+        // y elige libremente quien fue el chofer.
         if (!User.IsInRole("Administrador"))
         {
-            modelo.DniChofer = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var miDni = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var miRol = await _repo.ObtenerRolAsync(miDni);
+
+            if (miRol == "Ayudante")
+            {
+                modelo.DniAyudante = miDni;
+            }
+            else
+            {
+                modelo.DniChofer = miDni;
+            }
             modelo.Costo = null; // solo Gina puede fijar el costo del servicio
             modelo.CostoAdicional = null; // solo Gina puede fijar el costo adicional
         }
@@ -92,6 +103,7 @@ public class RecorridoController : Controller
         ViewBag.EsAdmin = User.IsInRole("Administrador");
         ViewBag.MiDni = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         ViewBag.MiNombre = User.Identity?.Name;
+        ViewBag.MiRol = ViewBag.EsAdmin ? null : await _repo.ObtenerRolAsync((string)ViewBag.MiDni ?? "");
     }
 
     // GET /Recorrido/EditarCosto/5 -> Gina completa costo y costo adicional de un viaje ya creado
