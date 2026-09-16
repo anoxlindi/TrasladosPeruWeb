@@ -42,7 +42,9 @@ public class RecorridoController : Controller
     public async Task<IActionResult> Crear()
     {
         await CargarListasAsync();
-        return View(new NuevoViajeForm { FechaInicio = DateTime.Now, FechaFin = DateTime.Now.AddHours(2) });
+        var ahora = DateTime.Now;
+        var ahoraSinSegundos = new DateTime(ahora.Year, ahora.Month, ahora.Day, ahora.Hour, ahora.Minute, 0);
+        return View(new NuevoViajeForm { FechaInicio = ahoraSinSegundos, FechaFin = ahoraSinSegundos.AddHours(2) });
     }
 
     // POST /Recorrido/Crear -> arma Cargamento + TransporteCargamento + Ruta + Solicitud + Recorrido
