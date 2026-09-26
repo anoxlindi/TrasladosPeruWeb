@@ -180,12 +180,86 @@ public class RecorridoRepository
         return await db.QueryFirstOrDefaultAsync<ReporteRecorridoDto>(sql, new { codigoRecorrido });
     }
 
-    // Gina completa el costo y el costo adicional de un viaje ya creado por el chofer
-    public async Task ActualizarCostoAsync(long codigoRecorrido, decimal? costo, decimal? costoAdicional)
+    // Trae un viaje con TODOS sus campos editables, para la pantalla de edicion de Gina
+    public async Task<NuevoViajeForm?> ObtenerParaEditarAsync(long codigoRecorrido)
     {
         using var db = _conexion.CrearConexion();
-        var sql = "UPDATE RecorridoTransporte SET Costo = @costo, CostoAdicional = @costoAdicional WHERE CodigoRecorrido = @codigoRecorrido";
-        await db.ExecuteAsync(sql, new { codigoRecorrido, costo, costoAdicional });
+        var sql = @"SELECT
+                        r.CodigoRecorrido, r.FechaInicio, r.FechaFin, r.KilometrajeInicial, r.KilometrajeFinal,
+                        r.Costo, r.CostoAdicional, r.DniChofer, r.DniAyudante, r.ClienteOtro,
+                        tc.CodigoUnidad, c.TipoCargamento, c.Peso,
+                        s.Ruc, ruta.PuntoInicio, ruta.PuntoFin
+                    FROM RecorridoTransporte r
+                    JOIN TransporteCargamento tc ON tc.CodTransporteCargamento = r.CodTransporteCargamento
+                    JOIN Cargamento c ON c.CodigoCargamento = tc.CodigoCargamento
+                    JOIN Ruta ruta ON ruta.CodigoRuta = r.CodigoRuta
+                    LEFT JOIN Solicitud s ON s.CodTransporteCargamento = tc.CodTransporteCargamento
+                    WHERE r.CodigoRecorrido = @codigoRecorrido";
+        return await db.QueryFirstOrDefaultAsync<NuevoViajeForm>(sql, new { codigoRecorrido });
+    }
+
+    // Gina edita cualquier campo de un viaje ya creado (en vez de borrar y crear uno nuevo)
+    public async Task ActualizarViajeCompletoAsync(NuevoViajeForm f)
+    {
+        using var db = _conexion.CrearConexion();
+        db.Open();
+        using var tx = db.BeginTransaction();
+        try
+        {
+            // Necesitamos los codigos internos (Ruta, TransporteCargamento, Cargamento) de este viaje
+            var claves = await db.QueryFirstAsync(
+                @"SELECT r.CodigoRuta, r.CodTransporteCargamento, tc.CodigoCargamento
+                  FROM RecorridoTransporte r
+                  JOIN TransporteCargamento tc ON tc.CodTransporteCargamento = r.CodTransporteCargamento
+                  WHERE r.CodigoRecorrido = @id",
+                new { id = f.CodigoRecorrido }, tx);
+
+            await db.ExecuteAsync(
+                "UPDATE Cargamento SET TipoCargamento = @TipoCargamento, Peso = @Peso WHERE CodigoCargamento = @CodigoCargamento",
+                new { f.TipoCargamento, f.Peso, claves.CodigoCargamento }, tx);
+
+            await db.ExecuteAsync(
+                "UPDATE TransporteCargamento SET CodigoUnidad = @CodigoUnidad WHERE CodTransporteCargamento = @CodTransporteCargamento",
+                new { f.CodigoUnidad, claves.CodTransporteCargamento }, tx);
+
+            await db.ExecuteAsync(
+                "UPDATE Ruta SET PuntoInicio = @PuntoInicio, PuntoFin = @PuntoFin WHERE CodigoRuta = @CodigoRuta",
+                new { f.PuntoInicio, f.PuntoFin, claves.CodigoRuta }, tx);
+
+            // Cliente: se borra la Solicitud anterior (si habia) y se crea de nuevo segun lo elegido ahora
+            await db.ExecuteAsync("DELETE FROM Solicitud WHERE CodTransporteCargamento = @CodTransporteCargamento",
+                new { claves.CodTransporteCargamento }, tx);
+
+            string? clienteOtro = string.IsNullOrWhiteSpace(f.Ruc) ? f.ClienteOtro : null;
+            if (!string.IsNullOrWhiteSpace(f.Ruc))
+            {
+                await db.ExecuteAsync(
+                    "INSERT INTO Solicitud (FechaSolicitud, Ruc, CodTransporteCargamento) VALUES (GETDATE(), @Ruc, @CodTransporteCargamento)",
+                    new { f.Ruc, claves.CodTransporteCargamento }, tx);
+            }
+
+            string? dniAyudante = string.IsNullOrWhiteSpace(f.DniAyudante) ? null : f.DniAyudante;
+
+            await db.ExecuteAsync(
+                @"UPDATE RecorridoTransporte SET
+                    FechaInicio = @FechaInicio, FechaFin = @FechaFin,
+                    KilometrajeInicial = @KilometrajeInicial, KilometrajeFinal = @KilometrajeFinal,
+                    DniChofer = @DniChofer, DniAyudante = @dniAyudante,
+                    Costo = @Costo, CostoAdicional = @CostoAdicional, ClienteOtro = @clienteOtro
+                  WHERE CodigoRecorrido = @CodigoRecorrido",
+                new
+                {
+                    f.FechaInicio, f.FechaFin, f.KilometrajeInicial, f.KilometrajeFinal,
+                    f.DniChofer, dniAyudante, f.Costo, f.CostoAdicional, clienteOtro, f.CodigoRecorrido
+                }, tx);
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
     }
 
     // Elimina un recorrido por su codigo (boton "Eliminar")

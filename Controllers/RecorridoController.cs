@@ -108,21 +108,45 @@ public class RecorridoController : Controller
         ViewBag.MiRol = ViewBag.EsAdmin ? null : await _repo.ObtenerRolAsync((string)ViewBag.MiDni ?? "");
     }
 
-    // GET /Recorrido/EditarCosto/5 -> Gina completa costo y costo adicional de un viaje ya creado
+    // GET /Recorrido/Editar/5 -> Gina edita cualquier campo de un viaje ya creado
     [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> EditarCosto(long id)
+    public async Task<IActionResult> Editar(long id)
     {
-        var viaje = await _repo.ObtenerPorIdAsync(id);
+        var viaje = await _repo.ObtenerParaEditarAsync(id);
         if (viaje is null) return NotFound();
+
+        ViewBag.Clientes = await _repo.ObtenerClientesAsync();
+        ViewBag.Choferes = await _repo.ObtenerChoferesAsync();
+        ViewBag.Ayudantes = await _repo.ObtenerAyudantesAsync();
+        ViewBag.Unidades = await _repo.ObtenerUnidadesAsync();
+        ViewBag.TiposCarga = new[] { "Carga Fria", "Carga Seca", "MAPTEL", "Peligroso" };
         return View(viaje);
     }
 
     [HttpPost]
     [Authorize(Roles = "Administrador")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditarCosto(long id, decimal? Costo, decimal? CostoAdicional)
+    public async Task<IActionResult> Editar(NuevoViajeForm modelo)
     {
-        await _repo.ActualizarCostoAsync(id, Costo, CostoAdicional);
+        if (modelo.KilometrajeFinal <= modelo.KilometrajeInicial)
+        {
+            ModelState.AddModelError("", "El kilometraje final debe ser mayor al inicial.");
+        }
+        if (modelo.FechaFin <= modelo.FechaInicio)
+        {
+            ModelState.AddModelError("", "La fecha final debe ser posterior a la fecha de inicio.");
+        }
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Clientes = await _repo.ObtenerClientesAsync();
+            ViewBag.Choferes = await _repo.ObtenerChoferesAsync();
+            ViewBag.Ayudantes = await _repo.ObtenerAyudantesAsync();
+            ViewBag.Unidades = await _repo.ObtenerUnidadesAsync();
+            ViewBag.TiposCarga = new[] { "Carga Fria", "Carga Seca", "MAPTEL", "Peligroso" };
+            return View(modelo);
+        }
+
+        await _repo.ActualizarViajeCompletoAsync(modelo);
         return RedirectToAction(nameof(Index));
     }
 

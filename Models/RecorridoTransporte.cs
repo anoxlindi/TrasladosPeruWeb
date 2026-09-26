@@ -19,6 +19,7 @@ public class RecorridoTransporte
 // El controlador arma Cargamento, TransporteCargamento, Ruta y Solicitud por detras.
 public class NuevoViajeForm
 {
+    public long? CodigoRecorrido { get; set; } // si tiene valor, es una edicion; si es null, es un viaje nuevo
     public string? Ruc { get; set; }              // cliente del catalogo (vacio si usa ClienteOtro)
     public string? ClienteOtro { get; set; }       // texto libre si el cliente no esta en la lista
     public string DniChofer { get; set; } = "";

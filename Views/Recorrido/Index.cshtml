@@ -104,7 +104,7 @@ else
                         <td>
                             @if (esAdmin)
                             {
-                                <a href="/Recorrido/EditarCosto/@r.CodigoRecorrido" class="btn-icon" title="Editar costo">✏️</a>
+                                <a href="/Recorrido/Editar/@r.CodigoRecorrido" class="btn-icon" title="Editar viaje">✏️</a>
                             }
                             <form asp-controller="Recorrido" asp-action="Eliminar" asp-route-id="@r.CodigoRecorrido" method="post"
                                   onsubmit="return confirm('¿Eliminar este viaje?');" style="display:inline;">
