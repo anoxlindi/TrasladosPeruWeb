@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TrasladosPeruWeb.Models;
 
@@ -52,7 +53,8 @@ public class FiltroPlanificacion
     public DateTime? FechaHasta { get; set; }
 }
 
-// Arma el texto que se le envia a cada trabajador y el link de WhatsApp.
+// Arma el texto que se le envia a cada trabajador (copiar / link de WhatsApp)
+// y los parametros de la plantilla para el envio automatico por la API.
 public static class MensajesRuta
 {
     private static readonly string[] Dias =
@@ -73,62 +75,103 @@ public static class MensajesRuta
 
     private static string Hora(TimeSpan hora) => $"{hora.Hours:00}:{hora.Minutes:00}";
 
-    // paraChofer = true -> mensaje para el chofer (menciona al ayudante); false -> para el ayudante
+    private static string FechaLarga(DateTime fecha) => $"{Dias[(int)fecha.DayOfWeek]} {fecha:dd/MM/yyyy}";
+
+    private static string Tel(string? telefono) =>
+        string.IsNullOrWhiteSpace(telefono) ? "" : $" ({telefono.Trim()})";
+
+    // Texto de la linea del companero: el chofer ve a su ayudante y el ayudante ve a su chofer
+    private static string Companero(RutaPlanificadaDto r, bool paraChofer)
+    {
+        if (paraChofer)
+        {
+            return string.IsNullOrWhiteSpace(r.Ayudante)
+                ? "Ayudante: sin ayudante"
+                : $"Ayudante: {NombreBonito(r.Ayudante)}{Tel(r.TelefonoAyudante)}";
+        }
+        return $"Chofer: {NombreBonito(r.Chofer)}{Tel(r.TelefonoChofer)}";
+    }
+
+    // paraChofer = true -> mensaje para el chofer (menciona al ayudante); false -> para el ayudante.
+    // Sin emojis a proposito (se veian como "?" en algunos navegadores); usa las negritas de WhatsApp (*texto*).
     public static string Construir(RutaPlanificadaDto r, bool paraChofer)
     {
         var nombre = PrimerNombre(paraChofer ? r.Chofer : r.Ayudante);
         var sb = new StringBuilder();
 
-        sb.AppendLine($"Hola {nombre} 👋");
-        sb.AppendLine($"Esta es tu ruta del {Dias[(int)r.Fecha.DayOfWeek]} {r.Fecha:dd/MM/yyyy}:");
+        sb.AppendLine($"Hola {nombre},");
+        sb.AppendLine($"Esta es tu ruta del {FechaLarga(r.Fecha)}:");
         sb.AppendLine();
-        sb.AppendLine($"🏢 Cliente: {r.Cliente ?? "-"}");
-        sb.AppendLine($"🕖 Salida de cochera: {Hora(r.HoraSalidaCochera)}");
+        sb.AppendLine($"*Cliente:* {r.Cliente ?? "-"}");
+        sb.AppendLine($"*Salida de cochera:* {Hora(r.HoraSalidaCochera)}");
         if (r.HoraCita.HasValue)
         {
-            sb.AppendLine($"⏰ Hora de la cita: {Hora(r.HoraCita.Value)}");
+            sb.AppendLine($"*Hora de la cita:* {Hora(r.HoraCita.Value)}");
         }
-        sb.AppendLine($"🚚 Unidad: {r.Placa.Trim()}");
-        sb.AppendLine($"🛣️ Ruta: {r.PuntoInicio} → {r.PuntoFin}");
+        sb.AppendLine($"*Unidad:* {r.Placa.Trim()}");
+        sb.AppendLine($"*Ruta:* {r.PuntoInicio} → {r.PuntoFin}");
         if (!string.IsNullOrWhiteSpace(r.Direccion))
         {
-            sb.AppendLine($"📍 Dirección: {r.Direccion}");
+            sb.AppendLine($"*Dirección:* {r.Direccion}");
         }
 
-        if (paraChofer)
-        {
-            if (!string.IsNullOrWhiteSpace(r.Ayudante))
-            {
-                var tel = string.IsNullOrWhiteSpace(r.TelefonoAyudante) ? "" : $" ({r.TelefonoAyudante!.Trim()})";
-                sb.AppendLine($"👷 Ayudante: {NombreBonito(r.Ayudante)}{tel}");
-            }
-            else
-            {
-                sb.AppendLine("👷 Ayudante: sin ayudante");
-            }
-        }
-        else
-        {
-            var tel = string.IsNullOrWhiteSpace(r.TelefonoChofer) ? "" : $" ({r.TelefonoChofer!.Trim()})";
-            sb.AppendLine($"🧑‍✈️ Chofer: {NombreBonito(r.Chofer)}{tel}");
-        }
+        var companero = Companero(r, paraChofer);
+        var separador = companero.IndexOf(':');
+        sb.AppendLine($"*{companero[..separador]}:*{companero[(separador + 1)..]}");
 
         if (!string.IsNullOrWhiteSpace(r.Observaciones))
         {
-            sb.AppendLine($"📝 Nota: {r.Observaciones}");
+            sb.AppendLine($"*Nota:* {r.Observaciones}");
         }
 
         sb.AppendLine();
-        sb.Append("Cualquier duda avísame. ¡Buen viaje! 🙌");
+        sb.Append("Cualquier duda avísame. ¡Buen viaje!");
         return sb.ToString();
     }
 
-    // Link que abre WhatsApp con el mensaje ya escrito. Si no hay telefono valido devuelve null.
-    public static string? LinkWhatsApp(string? telefono, string mensaje)
+    // Parametros {{1}} a {{10}} de la plantilla "ruta_asignada" de WhatsApp Business.
+    // Meta no admite saltos de linea ni valores vacios dentro de los parametros.
+    public static List<string> Parametros(RutaPlanificadaDto r, bool paraChofer)
+    {
+        var nombre = PrimerNombre(paraChofer ? r.Chofer : r.Ayudante);
+        return new List<string>
+        {
+            Limpiar(nombre),                                                       // {{1}} nombre
+            Limpiar(FechaLarga(r.Fecha)),                                          // {{2}} fecha
+            Limpiar(r.Cliente),                                                    // {{3}} cliente
+            Limpiar(Hora(r.HoraSalidaCochera)),                                    // {{4}} salida de cochera
+            Limpiar(r.HoraCita.HasValue ? Hora(r.HoraCita.Value) : "-"),           // {{5}} hora de la cita
+            Limpiar(r.Placa),                                                      // {{6}} unidad
+            Limpiar($"{r.PuntoInicio} → {r.PuntoFin}"),                            // {{7}} ruta
+            Limpiar(r.Direccion),                                                  // {{8}} direccion
+            Limpiar(Companero(r, paraChofer)),                                     // {{9}} companero
+            Limpiar(r.Observaciones)                                               // {{10}} nota
+        };
+    }
+
+    // Quita saltos de linea/tabs, reduce espacios repetidos y nunca devuelve vacio
+    private static string Limpiar(string? texto)
+    {
+        var limpio = Regex.Replace(texto ?? "", @"\s+", " ").Trim();
+        if (limpio.Length == 0) return "-";
+        return limpio.Length > 500 ? limpio[..500] : limpio;
+    }
+
+    // Telefono en formato internacional sin "+" (ej: 51944973091). Devuelve null si no es valido.
+    public static string? TelefonoInternacional(string? telefono)
     {
         var digitos = new string((telefono ?? "").Where(char.IsDigit).ToArray());
         if (digitos.Length == 9) digitos = "51" + digitos;   // numero peruano sin codigo de pais
-        if (digitos.Length < 11) return null;
-        return $"https://wa.me/{digitos}?text={Uri.EscapeDataString(mensaje)}";
+        return digitos.Length >= 11 ? digitos : null;
+    }
+
+    // Link que abre DIRECTO la app de WhatsApp (escritorio) con el chat y el mensaje ya escritos,
+    // sin pasar por la pagina web de WhatsApp. Solo falta apretar Enter.
+    // (respaldo cuando no esta configurado el envio automatico)
+    public static string? LinkWhatsApp(string? telefono, string mensaje)
+    {
+        var numero = TelefonoInternacional(telefono);
+        if (numero is null) return null;
+        return $"whatsapp://send?phone={numero}&text={Uri.EscapeDataString(mensaje)}";
     }
 }

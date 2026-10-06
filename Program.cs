@@ -7,6 +7,7 @@ builder.Services.AddSingleton<TrasladosPeruWeb.Data.ConexionFactory>();
 builder.Services.AddScoped<TrasladosPeruWeb.Repositories.RecorridoRepository>();
 builder.Services.AddScoped<TrasladosPeruWeb.Repositories.UsuarioRepository>();
 builder.Services.AddScoped<TrasladosPeruWeb.Repositories.PlanificacionRepository>();
+builder.Services.AddHttpClient<TrasladosPeruWeb.Services.WhatsAppService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

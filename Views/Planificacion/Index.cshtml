@@ -4,7 +4,10 @@
     var filtro = (FiltroPlanificacion)ViewBag.Filtro;
     string desde = filtro.FechaDesde?.ToString("yyyy-MM-dd") ?? "";
     string hasta = filtro.FechaHasta?.ToString("yyyy-MM-dd") ?? "";
+    bool automatico = ViewBag.WhatsAppAutomatico ?? false;
 }
+
+@Html.AntiForgeryToken()
 
 <div class="page-header">
     <h1>Planificar rutas</h1>
@@ -66,13 +69,17 @@ else
                         <td>
                             @(r.Chofer ?? "—")
                             <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
-                                @if (linkChofer != null)
+                                @if (linkChofer == null)
                                 {
-                                    <a href="@linkChofer" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</a>
+                                    <span style="color:var(--gris); font-size:0.8rem;">sin teléfono</span>
+                                }
+                                else if (automatico)
+                                {
+                                    <button type="button" class="btn btn-secondary btn-enviar" data-id="@r.CodigoPlan" data-destino="chofer" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</button>
                                 }
                                 else
                                 {
-                                    <span style="color:var(--gris); font-size:0.8rem;">sin teléfono</span>
+                                    <a href="@linkChofer" class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</a>
                                 }
                                 <button type="button" class="btn btn-secondary btn-copiar" style="padding:4px 10px; font-size:0.8rem;" data-mensaje="@mensajeChofer">Copiar</button>
                             </div>
@@ -82,13 +89,17 @@ else
                             {
                                 <span>@r.Ayudante</span>
                                 <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
-                                    @if (linkAyudante != null)
+                                    @if (linkAyudante == null)
                                     {
-                                        <a href="@linkAyudante" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</a>
+                                        <span style="color:var(--gris); font-size:0.8rem;">sin teléfono</span>
+                                    }
+                                    else if (automatico)
+                                    {
+                                        <button type="button" class="btn btn-secondary btn-enviar" data-id="@r.CodigoPlan" data-destino="ayudante" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</button>
                                     }
                                     else
                                     {
-                                        <span style="color:var(--gris); font-size:0.8rem;">sin teléfono</span>
+                                        <a href="@linkAyudante" class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</a>
                                     }
                                     <button type="button" class="btn btn-secondary btn-copiar" style="padding:4px 10px; font-size:0.8rem;" data-mensaje="@mensajeAyudante">Copiar</button>
                                 </div>
@@ -115,6 +126,43 @@ else
 }
 
 <script>
+    // Boton "Enviar" (envio automatico): manda el mensaje por la API de WhatsApp sin salir de esta pagina
+    document.querySelectorAll('.btn-enviar').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            if (boton.disabled) return;
+            var original = boton.innerText;
+            boton.disabled = true;
+            boton.innerText = 'Enviando...';
+
+            var datos = new URLSearchParams();
+            datos.append('id', boton.getAttribute('data-id'));
+            datos.append('destino', boton.getAttribute('data-destino'));
+            datos.append('__RequestVerificationToken',
+                document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch('/Planificacion/EnviarWhatsApp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: datos
+            })
+            .then(function (respuesta) { return respuesta.json(); })
+            .then(function (resultado) {
+                if (resultado.ok) {
+                    boton.innerText = '✓ Enviado';
+                } else {
+                    boton.disabled = false;
+                    boton.innerText = original;
+                    alert('No se pudo enviar: ' + resultado.mensaje);
+                }
+            })
+            .catch(function () {
+                boton.disabled = false;
+                boton.innerText = original;
+                alert('No se pudo enviar. Revisa tu conexión o vuelve a iniciar sesión.');
+            });
+        });
+    });
+
     // Boton "Copiar": deja el mensaje en el portapapeles por si prefieren pegarlo a mano
     document.querySelectorAll('.btn-copiar').forEach(function (boton) {
         boton.addEventListener('click', function () {

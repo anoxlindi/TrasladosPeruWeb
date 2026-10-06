@@ -51,6 +51,14 @@ public class PlanificacionRepository
         return await db.QueryAsync<RutaPlanificadaDto>(sql, parametros);
     }
 
+    // Una sola ruta con nombres y telefonos (para armar y enviar su mensaje)
+    public async Task<RutaPlanificadaDto?> ObtenerPorIdAsync(long codigoPlan)
+    {
+        using var db = _conexion.CrearConexion();
+        var sql = SelectBase + " WHERE p.CodigoPlan = @codigoPlan";
+        return await db.QueryFirstOrDefaultAsync<RutaPlanificadaDto>(sql, new { codigoPlan });
+    }
+
     public async Task<RutaPlanificadaForm?> ObtenerParaEditarAsync(long codigoPlan)
     {
         using var db = _conexion.CrearConexion();

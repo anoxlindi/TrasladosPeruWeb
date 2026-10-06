@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TrasladosPeruWeb.Models;
 using TrasladosPeruWeb.Repositories;
+using TrasladosPeruWeb.Services;
 
 namespace TrasladosPeruWeb.Controllers;
 
@@ -12,11 +13,13 @@ public class PlanificacionController : Controller
 {
     private readonly PlanificacionRepository _plan;
     private readonly RecorridoRepository _catalogos; // reutiliza las listas de choferes, ayudantes, unidades y clientes
+    private readonly WhatsAppService _whatsapp;
 
-    public PlanificacionController(PlanificacionRepository plan, RecorridoRepository catalogos)
+    public PlanificacionController(PlanificacionRepository plan, RecorridoRepository catalogos, WhatsAppService whatsapp)
     {
         _plan = plan;
         _catalogos = catalogos;
+        _whatsapp = whatsapp;
     }
 
     // GET /Planificacion -> lista de rutas armadas. Por defecto muestra desde hoy en adelante.
@@ -30,7 +33,35 @@ public class PlanificacionController : Controller
 
         var rutas = await _plan.ListarAsync(filtro);
         ViewBag.Filtro = filtro;
+        ViewBag.WhatsAppAutomatico = _whatsapp.EstaConfigurado;
         return View(rutas);
+    }
+
+    // POST /Planificacion/EnviarWhatsApp -> envia el mensaje al chofer o al ayudante sin salir de la pagina
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EnviarWhatsApp(long id, string destino)
+    {
+        if (!_whatsapp.EstaConfigurado)
+        {
+            return Json(new { ok = false, mensaje = "El envío automático todavía no está configurado." });
+        }
+
+        var ruta = await _plan.ObtenerPorIdAsync(id);
+        if (ruta is null)
+        {
+            return Json(new { ok = false, mensaje = "La ruta ya no existe." });
+        }
+
+        var paraChofer = destino == "chofer";
+        if (!paraChofer && string.IsNullOrWhiteSpace(ruta.Ayudante))
+        {
+            return Json(new { ok = false, mensaje = "Esta ruta no tiene ayudante." });
+        }
+
+        var telefono = paraChofer ? ruta.TelefonoChofer : ruta.TelefonoAyudante;
+        var (ok, detalle) = await _whatsapp.EnviarRutaAsync(telefono, MensajesRuta.Parametros(ruta, paraChofer));
+        return Json(new { ok, mensaje = ok ? "Enviado" : detalle });
     }
 
     // GET /Planificacion/Crear
