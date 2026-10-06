@@ -7,5 +7,7 @@ SELECT e.Dni, e.Nombres, e.Apellidos,
 FROM Empleado e
 LEFT JOIN Conductor c ON c.Dni = e.Dni
 LEFT JOIN Asistente a ON a.Dni = e.Dni
+
+
 WHERE e.Dni = '42859179'
 ORDER BY e.Dni;

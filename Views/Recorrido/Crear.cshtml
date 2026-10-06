@@ -6,6 +6,7 @@
     var ayudantes = (IEnumerable<OpcionSelect>)ViewBag.Ayudantes;
     var unidades = (IEnumerable<OpcionSelect>)ViewBag.Unidades;
     var tiposCarga = (string[])ViewBag.TiposCarga;
+    var distritos = (string[])ViewBag.Distritos;
     bool esAdmin = ViewBag.EsAdmin ?? false;
     string miDni = ViewBag.MiDni ?? "";
     string miNombre = ViewBag.MiNombre ?? "";
@@ -106,7 +107,7 @@
                 <label>Costo adicional (S/)</label>
                 @if (esAdmin)
                 {
-                    <input asp-for="CostoAdicional" type="number" step="0.01" class="input" placeholder="Ej: 50.00 (peaje, espera, etc.)" />
+                    <input asp-for="CostoAdicional" type="number" step="0.01" class="input" placeholder="Ej: 50.00 (espera, extras, etc.)" />
                 }
                 else
                 {
@@ -138,12 +139,24 @@
         <div class="form-grid">
             <div class="form-group">
                 <label>Punto de inicio</label>
-                <input asp-for="PuntoInicio" class="input" placeholder="Ej: Lurín" />
+                <select asp-for="PuntoInicio" class="input">
+                    <option value="">-- Selecciona un distrito --</option>
+                    @foreach (var d in distritos)
+                    {
+                        <option value="@d">@d</option>
+                    }
+                </select>
             </div>
 
             <div class="form-group">
                 <label>Punto final</label>
-                <input asp-for="PuntoFin" class="input" placeholder="Ej: San Martín de Porres" />
+                <select asp-for="PuntoFin" class="input">
+                    <option value="">-- Selecciona un distrito --</option>
+                    @foreach (var d in distritos)
+                    {
+                        <option value="@d">@d</option>
+                    }
+                </select>
             </div>
         </div>
 
@@ -160,13 +173,55 @@
             </div>
 
             <div class="form-group">
-                <label>Kilometraje inicial</label>
+                <label>Kilometraje de inicio de cochera</label>
+                <input asp-for="KilometrajeInicioCochera" type="number" class="input" placeholder="Ej: 15180" />
+            </div>
+
+            <div class="form-group">
+                <label>Kilometraje final de cochera</label>
+                <input asp-for="KilometrajeFinalCochera" type="number" class="input" placeholder="Ej: 15360" />
+            </div>
+
+            <div class="form-group">
+                <label>Kilometraje inicial (del servicio)</label>
                 <input asp-for="KilometrajeInicial" type="number" class="input" placeholder="Ej: 15200" />
             </div>
 
             <div class="form-group">
-                <label>Kilometraje final</label>
+                <label>Kilometraje final (del servicio)</label>
                 <input asp-for="KilometrajeFinal" type="number" class="input" placeholder="Ej: 15340" />
+            </div>
+        </div>
+
+        <h3 class="seccion">Peaje</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>¿Fuiste por peaje?</label>
+                <div style="display:flex; gap:20px; margin-top:6px;">
+                    <label style="font-weight:normal;"><input type="radio" name="FuePeaje" value="true" id="peajeSi" /> Sí</label>
+                    <label style="font-weight:normal;"><input type="radio" name="FuePeaje" value="false" id="peajeNo" checked /> No</label>
+                </div>
+            </div>
+
+            <div class="form-group" id="peajeCantidadBox" style="display:none;">
+                <label>¿Por cuántos peajes pasó? <span id="peajeCantidadValor">1</span></label>
+                <input asp-for="CantidadPeajes" type="range" min="1" max="4" step="1" value="1" class="input" oninput="document.getElementById('peajeCantidadValor').innerText = this.value;" />
+            </div>
+        </div>
+
+        <h3 class="seccion">Línea amarilla</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>¿Pasaste por línea amarilla?</label>
+                <div style="display:flex; gap:20px; margin-top:6px;">
+                    <label style="font-weight:normal;"><input type="radio" name="FueLineaAmarilla" value="true" id="lineaSi" /> Sí</label>
+                    <label style="font-weight:normal;"><input type="radio" name="FueLineaAmarilla" value="false" id="lineaNo" checked /> No</label>
+                </div>
+            </div>
+
+            <div class="form-group" id="lineaCantidadBox" style="display:none;">
+                <label>¿Por cuántas líneas amarillas pasó? <span id="lineaCantidadValor">1</span></label>
+                <input asp-for="CantidadLineaAmarilla" type="range" min="1" max="4" step="1" value="1" class="input" oninput="document.getElementById('lineaCantidadValor').innerText = this.value;" />
             </div>
         </div>
 
@@ -186,5 +241,27 @@
             var ahora = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
             campo.value = ahora.toISOString().slice(0, 16);
         }
+    })();
+
+    // Muestra/oculta la barra de cantidad de peajes segun la respuesta Si/No
+    (function () {
+        function actualizarPeaje() {
+            var si = document.getElementById('peajeSi').checked;
+            document.getElementById('peajeCantidadBox').style.display = si ? 'block' : 'none';
+        }
+        document.getElementById('peajeSi').addEventListener('change', actualizarPeaje);
+        document.getElementById('peajeNo').addEventListener('change', actualizarPeaje);
+        actualizarPeaje();
+    })();
+
+    // Muestra/oculta la barra de cantidad de linea amarilla segun la respuesta Si/No
+    (function () {
+        function actualizarLinea() {
+            var si = document.getElementById('lineaSi').checked;
+            document.getElementById('lineaCantidadBox').style.display = si ? 'block' : 'none';
+        }
+        document.getElementById('lineaSi').addEventListener('change', actualizarLinea);
+        document.getElementById('lineaNo').addEventListener('change', actualizarLinea);
+        actualizarLinea();
     })();
 </script>

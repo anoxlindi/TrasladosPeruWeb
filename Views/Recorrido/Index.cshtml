@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Recorridos";
     bool esAdmin = ViewBag.EsAdmin ?? false;
+    FiltroRecorridos? filtroAdmin = esAdmin ? (FiltroRecorridos)ViewBag.Filtro : null;
 }
 
 <div class="page-header">
@@ -10,7 +11,11 @@
         <a class="btn btn-primary" href="/Recorrido/Crear">+ Nuevo viaje</a>
         @if (esAdmin)
         {
-            <a class="btn btn-secondary" href="/Recorrido/ExportarExcel">⭳ Exportar a Excel</a>
+            // El link de exportar lleva el MISMO filtro que esta aplicado en pantalla
+            <a class="btn btn-secondary"
+               href="/Recorrido/ExportarExcel?FechaDesde=@(filtroAdmin!.FechaDesde?.ToString("yyyy-MM-dd"))&FechaHasta=@(filtroAdmin.FechaHasta?.ToString("yyyy-MM-dd"))&DniChofer=@(filtroAdmin.DniChofer)&CodigoUnidad=@(filtroAdmin.CodigoUnidad)">
+                ⭳ Exportar a Excel
+            </a>
         }
     </div>
 </div>
@@ -19,11 +24,15 @@
 {
     var choferes = (IEnumerable<OpcionSelect>)ViewBag.Choferes;
     var unidades = (IEnumerable<OpcionSelect>)ViewBag.Unidades;
-    var filtro = (FiltroRecorridos)ViewBag.Filtro;
+    var filtro = filtroAdmin!;
     <form method="get" class="card" style="padding:16px 20px; margin-bottom:20px; display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
         <div class="form-group">
-            <label>Fecha</label>
-            <input type="date" name="Fecha" class="input" value="@(filtro.Fecha?.ToString("yyyy-MM-dd"))" />
+            <label>Desde</label>
+            <input type="date" name="FechaDesde" class="input" value="@(filtro.FechaDesde?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="form-group">
+            <label>Hasta</label>
+            <input type="date" name="FechaHasta" class="input" value="@(filtro.FechaHasta?.ToString("yyyy-MM-dd"))" />
         </div>
         <div class="form-group">
             <label>Chofer</label>
@@ -75,6 +84,8 @@ else
                     <th>Inicio</th>
                     <th>Fin</th>
                     <th>Km recorridos</th>
+                    <th>Peaje</th>
+                    <th>Línea amarilla</th>
                     @if (esAdmin)
                     {
                         <th>Costo</th>
@@ -96,6 +107,8 @@ else
                         <td>@r.FechaInicio.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@r.FechaFin.ToString("dd/MM/yyyy HH:mm")</td>
                         <td><strong>@r.KilometrajeRecorrido km</strong></td>
+                        <td>@(r.FuePeaje ? $"Sí ({r.CantidadPeajes}) · S/ {r.CostoPeajes:0.00}" : "No")</td>
+                        <td>@(r.FueLineaAmarilla ? $"Sí ({r.CantidadLineaAmarilla}) · S/ {r.CostoLineaAmarilla:0.00}" : "No")</td>
                         @if (esAdmin)
                         {
                             <td>@(r.Costo.HasValue ? $"S/ {r.Costo:0.00}" : "—")</td>
@@ -104,7 +117,7 @@ else
                         <td>
                             @if (esAdmin)
                             {
-                                <a href="/Recorrido/Editar/@r.CodigoRecorrido" class="btn-icon" title="Editar viaje">✏️</a>
+                                <a href="/Recorrido/Editar/@r.CodigoRecorrido?fechaDesde=@(filtroAdmin!.FechaDesde?.ToString("yyyy-MM-dd"))&fechaHasta=@(filtroAdmin.FechaHasta?.ToString("yyyy-MM-dd"))&dniChofer=@(filtroAdmin.DniChofer)&codigoUnidad=@(filtroAdmin.CodigoUnidad)" class="btn-icon" title="Editar viaje">✏️</a>
                             }
                             <form asp-controller="Recorrido" asp-action="Eliminar" asp-route-id="@r.CodigoRecorrido" method="post"
                                   onsubmit="return confirm('¿Eliminar este viaje?');" style="display:inline;">

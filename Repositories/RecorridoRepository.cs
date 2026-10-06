@@ -16,14 +16,19 @@ public class RecorridoRepository
     // Lista para la pantalla principal.
     // - Si esDniOperador tiene valor: fuerza a mostrar SOLO los viajes de HOY donde esa persona
     //   fue chofer o ayudante (regla para Chofer/Ayudante comunes).
-    // - Si esDniOperador es null (administradora): usa los filtros opcionales que haya elegido.
+    // - Si esDniOperador es null (administradora): usa los filtros opcionales que haya elegido,
+    //   ahora con un RANGO de fechas (FechaDesde/FechaHasta) en vez de una sola fecha.
     public async Task<IEnumerable<ReporteRecorridoDto>> ObtenerTodosAsync(string? esDniOperador, FiltroRecorridos? filtro = null)
     {
         using var db = _conexion.CrearConexion();
         var sql = @"SELECT CodigoRecorrido, FechaInicio, FechaFin,
-                            KilometrajeInicial, KilometrajeFinal, KilometrajeRecorrido, Costo, CostoAdicional,
+                            KilometrajeInicial, KilometrajeFinal, KilometrajeRecorrido,
+                            KilometrajeInicioCochera, KilometrajeFinalCochera,
+                            Costo, CostoAdicional,
                             Placa, CodigoUnidad, DniChofer, DniAyudante, Cliente, Chofer, Ayudante,
-                            PuntoInicio, PuntoFin
+                            PuntoInicio, PuntoFin,
+                            FuePeaje, CantidadPeajes, CostoPeajes,
+                            FueLineaAmarilla, CantidadLineaAmarilla, CostoLineaAmarilla
                      FROM vw_ReporteRecorridos
                      WHERE 1 = 1";
 
@@ -38,10 +43,15 @@ public class RecorridoRepository
         }
         else if (filtro is not null)
         {
-            if (filtro.Fecha.HasValue)
+            if (filtro.FechaDesde.HasValue)
             {
-                sql += " AND CAST(FechaInicio AS DATE) = @fecha";
-                parametros.Add("fecha", filtro.Fecha.Value.Date);
+                sql += " AND CAST(FechaInicio AS DATE) >= @fechaDesde";
+                parametros.Add("fechaDesde", filtro.FechaDesde.Value.Date);
+            }
+            if (filtro.FechaHasta.HasValue)
+            {
+                sql += " AND CAST(FechaInicio AS DATE) <= @fechaHasta";
+                parametros.Add("fechaHasta", filtro.FechaHasta.Value.Date);
             }
             if (!string.IsNullOrWhiteSpace(filtro.DniChofer))
             {
@@ -145,17 +155,29 @@ public class RecorridoRepository
             string? dniAyudante = string.IsNullOrWhiteSpace(f.DniAyudante) ? null : f.DniAyudante;
             string? clienteOtro = string.IsNullOrWhiteSpace(f.Ruc) ? f.ClienteOtro : null;
 
+            // Si "FuePeaje"/"FueLineaAmarilla" es false, la cantidad se guarda en 0 (no se usa lo que haya tipeado el form)
+            int cantidadPeajes = f.FuePeaje ? f.CantidadPeajes : 0;
+            int cantidadLineaAmarilla = f.FueLineaAmarilla ? f.CantidadLineaAmarilla : 0;
+
             await db.ExecuteAsync(
                 @"INSERT INTO RecorridoTransporte
-                    (FechaInicio, FechaFin, KilometrajeInicial, KilometrajeFinal, CodigoRuta, CodTransporteCargamento,
-                     DniChofer, DniAyudante, Costo, CostoAdicional, ClienteOtro)
+                    (FechaInicio, FechaFin, KilometrajeInicial, KilometrajeFinal,
+                     KilometrajeInicioCochera, KilometrajeFinalCochera,
+                     CodigoRuta, CodTransporteCargamento,
+                     DniChofer, DniAyudante, Costo, CostoAdicional, ClienteOtro,
+                     FuePeaje, CantidadPeajes, FueLineaAmarilla, CantidadLineaAmarilla)
                   VALUES
-                    (@FechaInicio, @FechaFin, @KilometrajeInicial, @KilometrajeFinal, @codigoRuta, @codTransporteCargamento,
-                     @DniChofer, @dniAyudante, @Costo, @CostoAdicional, @clienteOtro)",
+                    (@FechaInicio, @FechaFin, @KilometrajeInicial, @KilometrajeFinal,
+                     @KilometrajeInicioCochera, @KilometrajeFinalCochera,
+                     @codigoRuta, @codTransporteCargamento,
+                     @DniChofer, @dniAyudante, @Costo, @CostoAdicional, @clienteOtro,
+                     @FuePeaje, @cantidadPeajes, @FueLineaAmarilla, @cantidadLineaAmarilla)",
                 new
                 {
                     f.FechaInicio, f.FechaFin, f.KilometrajeInicial, f.KilometrajeFinal,
-                    codigoRuta, codTransporteCargamento, f.DniChofer, dniAyudante, f.Costo, f.CostoAdicional, clienteOtro
+                    f.KilometrajeInicioCochera, f.KilometrajeFinalCochera,
+                    codigoRuta, codTransporteCargamento, f.DniChofer, dniAyudante, f.Costo, f.CostoAdicional, clienteOtro,
+                    f.FuePeaje, cantidadPeajes, f.FueLineaAmarilla, cantidadLineaAmarilla
                 }, tx);
 
             tx.Commit();
@@ -172,9 +194,13 @@ public class RecorridoRepository
     {
         using var db = _conexion.CrearConexion();
         var sql = @"SELECT CodigoRecorrido, FechaInicio, FechaFin,
-                            KilometrajeInicial, KilometrajeFinal, KilometrajeRecorrido, Costo, CostoAdicional,
+                            KilometrajeInicial, KilometrajeFinal, KilometrajeRecorrido,
+                            KilometrajeInicioCochera, KilometrajeFinalCochera,
+                            Costo, CostoAdicional,
                             Placa, CodigoUnidad, DniChofer, DniAyudante, Cliente, Chofer, Ayudante,
-                            PuntoInicio, PuntoFin
+                            PuntoInicio, PuntoFin,
+                            FuePeaje, CantidadPeajes, CostoPeajes,
+                            FueLineaAmarilla, CantidadLineaAmarilla, CostoLineaAmarilla
                      FROM vw_ReporteRecorridos
                      WHERE CodigoRecorrido = @codigoRecorrido";
         return await db.QueryFirstOrDefaultAsync<ReporteRecorridoDto>(sql, new { codigoRecorrido });
@@ -186,7 +212,9 @@ public class RecorridoRepository
         using var db = _conexion.CrearConexion();
         var sql = @"SELECT
                         r.CodigoRecorrido, r.FechaInicio, r.FechaFin, r.KilometrajeInicial, r.KilometrajeFinal,
+                        r.KilometrajeInicioCochera, r.KilometrajeFinalCochera,
                         r.Costo, r.CostoAdicional, r.DniChofer, r.DniAyudante, r.ClienteOtro,
+                        r.FuePeaje, r.CantidadPeajes, r.FueLineaAmarilla, r.CantidadLineaAmarilla,
                         tc.CodigoUnidad, c.TipoCargamento, c.Peso,
                         s.Ruc, ruta.PuntoInicio, ruta.PuntoFin
                     FROM RecorridoTransporte r
@@ -239,18 +267,25 @@ public class RecorridoRepository
             }
 
             string? dniAyudante = string.IsNullOrWhiteSpace(f.DniAyudante) ? null : f.DniAyudante;
+            int cantidadPeajes = f.FuePeaje ? f.CantidadPeajes : 0;
+            int cantidadLineaAmarilla = f.FueLineaAmarilla ? f.CantidadLineaAmarilla : 0;
 
             await db.ExecuteAsync(
                 @"UPDATE RecorridoTransporte SET
                     FechaInicio = @FechaInicio, FechaFin = @FechaFin,
                     KilometrajeInicial = @KilometrajeInicial, KilometrajeFinal = @KilometrajeFinal,
+                    KilometrajeInicioCochera = @KilometrajeInicioCochera, KilometrajeFinalCochera = @KilometrajeFinalCochera,
                     DniChofer = @DniChofer, DniAyudante = @dniAyudante,
-                    Costo = @Costo, CostoAdicional = @CostoAdicional, ClienteOtro = @clienteOtro
+                    Costo = @Costo, CostoAdicional = @CostoAdicional, ClienteOtro = @clienteOtro,
+                    FuePeaje = @FuePeaje, CantidadPeajes = @cantidadPeajes,
+                    FueLineaAmarilla = @FueLineaAmarilla, CantidadLineaAmarilla = @cantidadLineaAmarilla
                   WHERE CodigoRecorrido = @CodigoRecorrido",
                 new
                 {
                     f.FechaInicio, f.FechaFin, f.KilometrajeInicial, f.KilometrajeFinal,
-                    f.DniChofer, dniAyudante, f.Costo, f.CostoAdicional, clienteOtro, f.CodigoRecorrido
+                    f.KilometrajeInicioCochera, f.KilometrajeFinalCochera,
+                    f.DniChofer, dniAyudante, f.Costo, f.CostoAdicional, clienteOtro,
+                    f.FuePeaje, cantidadPeajes, f.FueLineaAmarilla, cantidadLineaAmarilla, f.CodigoRecorrido
                 }, tx);
 
             tx.Commit();

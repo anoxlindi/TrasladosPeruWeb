@@ -44,4 +44,27 @@ public class UsuarioRepository
         using var db = _conexion.CrearConexion();
         await db.ExecuteAsync("UPDATE Usuario SET Activo = 0 WHERE Dni = @dni", new { dni });
     }
+
+    // True si el DNI existe como usuario activo (para la pantalla "Olvidé mi contraseña")
+    public async Task<bool> ExisteUsuarioActivoAsync(string dni)
+    {
+        using var db = _conexion.CrearConexion();
+        var cantidad = await db.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM Usuario WHERE RTRIM(Dni) = @dni AND Activo = 1", new { dni });
+        return cantidad > 0;
+    }
+
+    // "Olvidé mi contraseña": automatiza lo que antes se hacia a mano con el script
+    // Resetear_Password.sql -- resetea la contraseña al propio DNI y la "backdatea"
+    // 8 dias para que el sistema obligue a cambiarla en el siguiente login (igual que
+    // la regla de los 7 dias que ya existia).
+    public async Task<bool> ResetearPasswordAsync(string dni)
+    {
+        using var db = _conexion.CrearConexion();
+        var sql = @"UPDATE Usuario
+                    SET Password = RTRIM(Dni), FechaUltimoCambio = DATEADD(DAY, -8, GETDATE())
+                    WHERE RTRIM(Dni) = @dni AND Activo = 1";
+        var filas = await db.ExecuteAsync(sql, new { dni });
+        return filas > 0;
+    }
 }

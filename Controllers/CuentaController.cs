@@ -73,6 +73,28 @@ public class CuentaController : Controller
         return RedirectToAction(nameof(Login));
     }
 
+    [AllowAnonymous]
+    public IActionResult OlvidePassword() => View(new OlvidePasswordForm());
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> OlvidePassword(OlvidePasswordForm form)
+    {
+        var dni = (form.Dni ?? "").Trim();
+        var existe = await _usuarios.ExisteUsuarioActivoAsync(dni);
+        if (!existe)
+        {
+            ModelState.AddModelError("", "No se encontró un usuario activo con ese DNI.");
+            return View(form);
+        }
+
+        await _usuarios.ResetearPasswordAsync(dni);
+
+        TempData["Mensaje"] = "Tu contraseña fue restablecida. Ahora es tu DNI. Al iniciar sesión, el sistema te pedirá crear una nueva.";
+        return RedirectToAction(nameof(Login));
+    }
+
     public async Task<IActionResult> Salir()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

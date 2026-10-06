@@ -13,3 +13,10 @@ SELECT u.Dni, e.Nombres, e.Apellidos, u.Password, u.FechaUltimoCambio
 FROM Usuario u
 JOIN Empleado e ON e.Dni = u.Dni
 WHERE u.Dni = @DniAResetear;
+
+
+------
+SELECT u.Placa, cu.Toneladas, cu.CantidadPaletas
+FROM UnidadTransporte u
+JOIN CapacidadUnidad cu ON cu.CodigoCapacidad = u.CodigoCapacidad
+ORDER BY cu.Toneladas DESC;
