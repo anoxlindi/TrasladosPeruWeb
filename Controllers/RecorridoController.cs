@@ -231,8 +231,8 @@ public class RecorridoController : Controller
         hojaDetalle.Cell(1, 10).Value = "Km Inicial";
         hojaDetalle.Cell(1, 11).Value = "Km Final";
         hojaDetalle.Cell(1, 12).Value = "Km Recorridos";
-        hojaDetalle.Cell(fila, 13).Value = r.KilometrajeInicioCochera.HasValue ? (object)r.KilometrajeInicioCochera.Value : "-";
-        hojaDetalle.Cell(fila, 14).Value = r.KilometrajeFinalCochera.HasValue ? (object)r.KilometrajeFinalCochera.Value : "-";
+        hojaDetalle.Cell(1, 13).Value = "Km Inicio Cochera";
+        hojaDetalle.Cell(1, 14).Value = "Km Final Cochera";
         hojaDetalle.Cell(1, 15).Value = "Costo (S/)";
         hojaDetalle.Cell(1, 16).Value = "Costo adicional (S/)";
         hojaDetalle.Cell(1, 17).Value = "¿Peaje?";
@@ -258,8 +258,8 @@ public class RecorridoController : Controller
             hojaDetalle.Cell(fila, 10).Value = r.KilometrajeInicial;
             hojaDetalle.Cell(fila, 11).Value = r.KilometrajeFinal;
             hojaDetalle.Cell(fila, 12).Value = r.KilometrajeRecorrido;
-            hojaDetalle.Cell(fila, 13).Value = r.KilometrajeInicioCochera.HasValue ? (object)r.KilometrajeInicioCochera.Value : "-";
-            hojaDetalle.Cell(fila, 14).Value = r.KilometrajeFinalCochera.HasValue ? (object)r.KilometrajeFinalCochera.Value : "-";
+            hojaDetalle.Cell(fila, 13).Value = r.KilometrajeInicioCochera ?? 0;
+            hojaDetalle.Cell(fila, 14).Value = r.KilometrajeFinalCochera ?? 0;
             hojaDetalle.Cell(fila, 15).Value = r.Costo ?? 0;
             hojaDetalle.Cell(fila, 16).Value = r.CostoAdicional ?? 0;
             hojaDetalle.Cell(fila, 17).Value = r.FuePeaje ? "Sí" : "No";
