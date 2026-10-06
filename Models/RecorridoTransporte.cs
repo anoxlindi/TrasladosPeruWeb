@@ -131,6 +131,8 @@ public static class Distritos
         "San Juan de Miraflores", "San Luis", "San Martín de Porres", "San Miguel",
         "Santa Anita", "Santa María del Mar", "Santa Rosa", "Santiago de Surco",
         "Surquillo", "Villa El Salvador", "Villa María del Triunfo",
+        // Callao
+        "Callao", "Bellavista", "Carmen de la Legua", "La Perla", "La Punta", "Mi Perú", "Ventanilla",
         // Lima Provincia
         "Barranca", "Canta", "Cañete", "Huaral", "Huarochirí", "Huaura", "Oyón",
         "Yauyos"
