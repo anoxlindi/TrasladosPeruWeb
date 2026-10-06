@@ -1,0 +1,144 @@
+@model RutaPlanificadaForm
+@{
+    var clientes = (IEnumerable<OpcionSelect>)ViewBag.Clientes;
+    var choferes = (IEnumerable<OpcionSelect>)ViewBag.Choferes;
+    var ayudantes = (IEnumerable<OpcionSelect>)ViewBag.Ayudantes;
+    var unidades = (IEnumerable<OpcionSelect>)ViewBag.Unidades;
+    var distritos = (string[])ViewBag.Distritos;
+
+    string horaSalida = Model.HoraSalidaCochera.HasValue
+        ? $"{Model.HoraSalidaCochera.Value.Hours:00}:{Model.HoraSalidaCochera.Value.Minutes:00}" : "";
+    string horaCita = Model.HoraCita.HasValue
+        ? $"{Model.HoraCita.Value.Hours:00}:{Model.HoraCita.Value.Minutes:00}" : "";
+}
+
+<h3 class="seccion">Fecha y horarios</h3>
+<div class="form-grid">
+    <div class="form-group">
+        <label>Fecha de la ruta</label>
+        <input asp-for="Fecha" type="date" class="input" value="@(Model.Fecha.ToString("yyyy-MM-dd"))" />
+    </div>
+
+    <div class="form-group">
+        <label>Hora de salida de cochera</label>
+        <input asp-for="HoraSalidaCochera" type="time" class="input" value="@horaSalida" />
+    </div>
+
+    <div class="form-group">
+        <label>Hora de la cita (opcional)</label>
+        <input asp-for="HoraCita" type="time" class="input" value="@horaCita" />
+    </div>
+</div>
+
+<h3 class="seccion">Cliente</h3>
+<div class="form-grid">
+    <div class="form-group">
+        <label>Cliente</label>
+        <select asp-for="Ruc" class="input" onchange="document.getElementById('otroClienteBox').style.display = this.value === '' ? 'block' : 'none';">
+            <option value="">-- Otro (escribir abajo) --</option>
+            @foreach (var c in clientes)
+            {
+                <option value="@c.Codigo">@c.Texto</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group" id="otroClienteBox">
+        <label>Si es "Otro", escribe el nombre del cliente</label>
+        <input asp-for="ClienteOtro" class="input" placeholder="Nombre de la empresa" />
+    </div>
+</div>
+
+<h3 class="seccion">Unidad y personal</h3>
+<div class="form-grid">
+    <div class="form-group">
+        <label>Unidad (placa)</label>
+        <select asp-for="CodigoUnidad" class="input">
+            <option value="">-- Selecciona --</option>
+            @foreach (var u in unidades)
+            {
+                <option value="@u.Codigo">@u.Texto</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Chofer</label>
+        <select asp-for="DniChofer" class="input">
+            <option value="">-- Selecciona --</option>
+            @foreach (var c in choferes)
+            {
+                <option value="@c.Codigo">@c.Texto</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Ayudante</label>
+        <select asp-for="DniAyudante" class="input">
+            <option value="">-- Sin ayudante --</option>
+            @foreach (var a in ayudantes)
+            {
+                <option value="@a.Codigo">@a.Texto</option>
+            }
+        </select>
+    </div>
+</div>
+
+<h3 class="seccion">Lugar</h3>
+<div class="form-grid">
+    <div class="form-group">
+        <label>Punto de inicio</label>
+        <select asp-for="PuntoInicio" class="input">
+            <option value="">-- Selecciona un distrito --</option>
+            @foreach (var d in distritos)
+            {
+                <option value="@d">@d</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Punto final</label>
+        <select asp-for="PuntoFin" class="input">
+            <option value="">-- Selecciona un distrito --</option>
+            @foreach (var d in distritos)
+            {
+                <option value="@d">@d</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Dirección exacta de la cita (opcional)</label>
+        <input asp-for="Direccion" class="input" maxlength="150" placeholder="Ej: Av. Industrial 123, Lurín" />
+    </div>
+
+    <div class="form-group">
+        <label>Observaciones (opcional)</label>
+        <input asp-for="Observaciones" class="input" maxlength="300" placeholder="Ej: llevar guías de remisión" />
+    </div>
+</div>
+
+<script>
+    // Respaldo: deja marcado en cada lista lo que ya tenia la ruta (al editar)
+    (function () {
+        function marcar(nombre, valor) {
+            if (valor === null || valor === undefined || valor === "") return;
+            var el = document.querySelector('select[name="' + nombre + '"]');
+            if (el) el.value = String(valor);
+        }
+        marcar("Ruc", "@Model.Ruc");
+        marcar("CodigoUnidad", "@(Model.CodigoUnidad > 0 ? Model.CodigoUnidad.ToString() : "")");
+        marcar("DniChofer", "@Model.DniChofer");
+        marcar("DniAyudante", "@Model.DniAyudante");
+        marcar("PuntoInicio", "@Model.PuntoInicio");
+        marcar("PuntoFin", "@Model.PuntoFin");
+
+        var otroBox = document.getElementById('otroClienteBox');
+        var rucSelect = document.querySelector('select[name="Ruc"]');
+        if (otroBox && rucSelect) {
+            otroBox.style.display = rucSelect.value === "" ? "block" : "none";
+        }
+    })();
+</script>

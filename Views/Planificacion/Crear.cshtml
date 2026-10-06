@@ -1,0 +1,21 @@
+@model RutaPlanificadaForm
+@{
+    ViewData["Title"] = "Planificar ruta";
+}
+
+<div class="page-header">
+    <h1>Planificar ruta</h1>
+</div>
+
+<div class="card form-card">
+    <div asp-validation-summary="All" class="validation-summary"></div>
+
+    <form asp-controller="Planificacion" asp-action="Crear" method="post">
+        <partial name="_Formulario" model="Model" />
+
+        <div class="form-actions">
+            <a href="/Planificacion" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar ruta</button>
+        </div>
+    </form>
+</div>

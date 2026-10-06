@@ -1,0 +1,140 @@
+@model IEnumerable<RutaPlanificadaDto>
+@{
+    ViewData["Title"] = "Planificar rutas";
+    var filtro = (FiltroPlanificacion)ViewBag.Filtro;
+    string desde = filtro.FechaDesde?.ToString("yyyy-MM-dd") ?? "";
+    string hasta = filtro.FechaHasta?.ToString("yyyy-MM-dd") ?? "";
+}
+
+<div class="page-header">
+    <h1>Planificar rutas</h1>
+    <div class="actions">
+        <a class="btn btn-primary" href="/Planificacion/Crear">+ Planificar ruta</a>
+        <a class="btn btn-secondary" href="/Planificacion/ExportarExcel?FechaDesde=@desde&FechaHasta=@hasta">⭳ Exportar a Excel</a>
+    </div>
+</div>
+
+<form method="get" class="card" style="padding:16px 20px; margin-bottom:20px; display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+    <div class="form-group">
+        <label>Desde</label>
+        <input type="date" name="FechaDesde" class="input" value="@desde" />
+    </div>
+    <div class="form-group">
+        <label>Hasta</label>
+        <input type="date" name="FechaHasta" class="input" value="@hasta" />
+    </div>
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    <a href="/Planificacion" class="btn btn-secondary">Hoy en adelante</a>
+</form>
+
+@if (!Model.Any())
+{
+    <p class="empty-state">No hay rutas planificadas en estas fechas. Arma la primera con el botón de arriba.</p>
+}
+else
+{
+    <div class="card" style="overflow-x:auto;">
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Salida</th>
+                    <th>Cita</th>
+                    <th>Cliente</th>
+                    <th>Unidad</th>
+                    <th>Chofer</th>
+                    <th>Ayudante</th>
+                    <th>Ruta</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    var mensajeChofer = MensajesRuta.Construir(r, true);
+                    var linkChofer = MensajesRuta.LinkWhatsApp(r.TelefonoChofer, mensajeChofer);
+                    var tieneAyudante = !string.IsNullOrWhiteSpace(r.Ayudante);
+                    var mensajeAyudante = tieneAyudante ? MensajesRuta.Construir(r, false) : "";
+                    var linkAyudante = tieneAyudante ? MensajesRuta.LinkWhatsApp(r.TelefonoAyudante, mensajeAyudante) : null;
+
+                    <tr>
+                        <td>@r.Fecha.ToString("dd/MM/yyyy")</td>
+                        <td><strong>@($"{r.HoraSalidaCochera.Hours:00}:{r.HoraSalidaCochera.Minutes:00}")</strong></td>
+                        <td>@(r.HoraCita.HasValue ? $"{r.HoraCita.Value.Hours:00}:{r.HoraCita.Value.Minutes:00}" : "—")</td>
+                        <td>@(r.Cliente ?? "—")</td>
+                        <td><span class="chip">@r.Placa.Trim()</span></td>
+                        <td>
+                            @(r.Chofer ?? "—")
+                            <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+                                @if (linkChofer != null)
+                                {
+                                    <a href="@linkChofer" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</a>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--gris); font-size:0.8rem;">sin teléfono</span>
+                                }
+                                <button type="button" class="btn btn-secondary btn-copiar" style="padding:4px 10px; font-size:0.8rem;" data-mensaje="@mensajeChofer">Copiar</button>
+                            </div>
+                        </td>
+                        <td>
+                            @if (tieneAyudante)
+                            {
+                                <span>@r.Ayudante</span>
+                                <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+                                    @if (linkAyudante != null)
+                                    {
+                                        <a href="@linkAyudante" target="_blank" rel="noopener" class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</a>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--gris); font-size:0.8rem;">sin teléfono</span>
+                                    }
+                                    <button type="button" class="btn btn-secondary btn-copiar" style="padding:4px 10px; font-size:0.8rem;" data-mensaje="@mensajeAyudante">Copiar</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <span>—</span>
+                            }
+                        </td>
+                        <td>@(r.PuntoInicio) → @(r.PuntoFin)</td>
+                        <td style="white-space:nowrap;">
+                            <a href="/Planificacion/Editar/@(r.CodigoPlan)?fechaDesde=@(desde)&fechaHasta=@(hasta)" class="btn-icon" title="Editar ruta">✏️</a>
+                            <form asp-controller="Planificacion" asp-action="Eliminar" asp-route-id="@r.CodigoPlan"
+                                  asp-route-fechaDesde="@desde" asp-route-fechaHasta="@hasta" method="post"
+                                  onsubmit="return confirm('¿Eliminar esta ruta planificada?');" style="display:inline;">
+                                <button type="submit" class="btn-icon" title="Eliminar">🗑</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<script>
+    // Boton "Copiar": deja el mensaje en el portapapeles por si prefieren pegarlo a mano
+    document.querySelectorAll('.btn-copiar').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var texto = boton.getAttribute('data-mensaje') || '';
+            var original = boton.innerText;
+            function listo() {
+                boton.innerText = '¡Copiado!';
+                setTimeout(function () { boton.innerText = original; }, 1500);
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(texto).then(listo);
+            } else {
+                var area = document.createElement('textarea');
+                area.value = texto;
+                document.body.appendChild(area);
+                area.select();
+                document.execCommand('copy');
+                document.body.removeChild(area);
+                listo();
+            }
+        });
+    });
+</script>

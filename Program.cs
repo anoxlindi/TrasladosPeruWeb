@@ -6,6 +6,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<TrasladosPeruWeb.Data.ConexionFactory>();
 builder.Services.AddScoped<TrasladosPeruWeb.Repositories.RecorridoRepository>();
 builder.Services.AddScoped<TrasladosPeruWeb.Repositories.UsuarioRepository>();
+builder.Services.AddScoped<TrasladosPeruWeb.Repositories.PlanificacionRepository>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
