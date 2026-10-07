@@ -28,7 +28,7 @@ public class PlanificacionController : Controller
         var sinFiltroEnLaUrl = !Request.Query.ContainsKey("FechaDesde") && !Request.Query.ContainsKey("FechaHasta");
         if (sinFiltroEnLaUrl)
         {
-            filtro.FechaDesde = DateTime.Today;
+            filtro.FechaDesde = HoraPeru.Hoy;
         }
 
         var rutas = await _plan.ListarAsync(filtro);
@@ -68,7 +68,7 @@ public class PlanificacionController : Controller
     public async Task<IActionResult> Crear()
     {
         await CargarListasAsync();
-        return View(new RutaPlanificadaForm { Fecha = DateTime.Today });
+        return View(new RutaPlanificadaForm { Fecha = HoraPeru.Hoy });
     }
 
     [HttpPost]

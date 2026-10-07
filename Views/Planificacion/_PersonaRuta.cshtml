@@ -1,0 +1,24 @@
+@model PersonaRutaVm
+
+<div class="persona">
+    <div class="persona-datos">
+        <span class="persona-rol">@Model.Etiqueta</span>
+        <span class="persona-nombre">@Model.Nombre</span>
+    </div>
+    <div class="persona-botones">
+        @if (Model.Link == null)
+        {
+            <span class="sin-telefono" title="Agrega el teléfono de esta persona en la tabla Empleado">📵 sin teléfono</span>
+        }
+        else if (Model.Automatico)
+        {
+            <button type="button" class="btn-wa btn-enviar" data-clave="@(Model.CodigoPlan)-@(Model.Destino)"
+                    data-id="@Model.CodigoPlan" data-destino="@Model.Destino">📲 Enviar</button>
+        }
+        else
+        {
+            <a class="btn-wa" href="@Model.Link" data-clave="@(Model.CodigoPlan)-@(Model.Destino)">📲 Enviar</a>
+        }
+        <button type="button" class="btn-copiar" data-mensaje="@Model.Mensaje" title="Copiar el mensaje">📋 Copiar</button>
+    </div>
+</div>

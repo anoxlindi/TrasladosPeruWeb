@@ -47,6 +47,24 @@ public class RutaPlanificadaDto
     public string? Observaciones { get; set; }
 }
 
+// El servidor de Azure trabaja en hora UTC: "hoy" se calcula con la hora de Peru (UTC-5, sin horario de verano).
+public static class HoraPeru
+{
+    public static DateTime Hoy => DateTime.UtcNow.AddHours(-5).Date;
+}
+
+// Datos de cada persona (chofer o ayudante) dentro de la tarjeta de una ruta.
+public class PersonaRutaVm
+{
+    public long CodigoPlan { get; set; }
+    public string Destino { get; set; } = "chofer";   // "chofer" o "ayudante"
+    public string Etiqueta { get; set; } = "";
+    public string Nombre { get; set; } = "";
+    public string? Link { get; set; }                  // link directo a WhatsApp (null = sin telefono)
+    public string Mensaje { get; set; } = "";
+    public bool Automatico { get; set; }
+}
+
 public class FiltroPlanificacion
 {
     public DateTime? FechaDesde { get; set; }
@@ -92,40 +110,53 @@ public static class MensajesRuta
         return $"Chofer: {NombreBonito(r.Chofer)}{Tel(r.TelefonoChofer)}";
     }
 
+    // Emojis escritos como codigos (\U....) para que no se danen si el archivo se guarda con otra codificacion.
+    private const string EmHola = "\U0001F44B";      // saludo
+    private const string EmFecha = "\U0001F4C5";     // calendario
+    private const string EmCliente = "\U0001F3E2";   // edificio
+    private const string EmSalida = "\u23F0";        // reloj despertador
+    private const string EmCita = "\U0001F91D";      // apreton de manos
+    private const string EmUnidad = "\U0001F69A";    // camion
+    private const string EmRuta = "\U0001F4CD";      // chincheta
+    private const string EmDireccion = "\U0001F4CC"; // pin
+    private const string EmPersona = "\U0001F464";   // persona
+    private const string EmNota = "\U0001F4DD";      // nota
+    private const string EmCierre = "\U0001F64C";    // manos arriba
+
     // paraChofer = true -> mensaje para el chofer (menciona al ayudante); false -> para el ayudante.
-    // Sin emojis a proposito (se veian como "?" en algunos navegadores); usa las negritas de WhatsApp (*texto*).
+    // Usa emojis y las negritas de WhatsApp (*texto*).
     public static string Construir(RutaPlanificadaDto r, bool paraChofer)
     {
         var nombre = PrimerNombre(paraChofer ? r.Chofer : r.Ayudante);
         var sb = new StringBuilder();
 
-        sb.AppendLine($"Hola {nombre},");
-        sb.AppendLine($"Esta es tu ruta del {FechaLarga(r.Fecha)}:");
+        sb.AppendLine($"{EmHola} Hola {nombre},");
+        sb.AppendLine($"{EmFecha} Esta es tu ruta del {FechaLarga(r.Fecha)}:");
         sb.AppendLine();
-        sb.AppendLine($"*Cliente:* {r.Cliente ?? "-"}");
-        sb.AppendLine($"*Salida de cochera:* {Hora(r.HoraSalidaCochera)}");
+        sb.AppendLine($"{EmCliente} *Cliente:* {r.Cliente ?? "-"}");
+        sb.AppendLine($"{EmSalida} *Salida de cochera:* {Hora(r.HoraSalidaCochera)}");
         if (r.HoraCita.HasValue)
         {
-            sb.AppendLine($"*Hora de la cita:* {Hora(r.HoraCita.Value)}");
+            sb.AppendLine($"{EmCita} *Hora de la cita:* {Hora(r.HoraCita.Value)}");
         }
-        sb.AppendLine($"*Unidad:* {r.Placa.Trim()}");
-        sb.AppendLine($"*Ruta:* {r.PuntoInicio} → {r.PuntoFin}");
+        sb.AppendLine($"{EmUnidad} *Unidad:* {r.Placa.Trim()}");
+        sb.AppendLine($"{EmRuta} *Ruta:* {r.PuntoInicio} \u2192 {r.PuntoFin}");
         if (!string.IsNullOrWhiteSpace(r.Direccion))
         {
-            sb.AppendLine($"*Dirección:* {r.Direccion}");
+            sb.AppendLine($"{EmDireccion} *Direcci\u00F3n:* {r.Direccion}");
         }
 
         var companero = Companero(r, paraChofer);
         var separador = companero.IndexOf(':');
-        sb.AppendLine($"*{companero[..separador]}:*{companero[(separador + 1)..]}");
+        sb.AppendLine($"{EmPersona} *{companero[..separador]}:*{companero[(separador + 1)..]}");
 
         if (!string.IsNullOrWhiteSpace(r.Observaciones))
         {
-            sb.AppendLine($"*Nota:* {r.Observaciones}");
+            sb.AppendLine($"{EmNota} *Nota:* {r.Observaciones}");
         }
 
         sb.AppendLine();
-        sb.Append("Cualquier duda avísame. ¡Buen viaje!");
+        sb.Append($"{EmCierre} Cualquier duda av\u00EDsame. \u00A1Buen viaje!");
         return sb.ToString();
     }
 

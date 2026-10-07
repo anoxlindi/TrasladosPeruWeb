@@ -235,6 +235,207 @@ body {
     padding: 24px;
 }
 
+/* ---------- Planificar rutas ---------- */
+.atajos {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.atajo {
+    background: white;
+    color: var(--azul);
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+}
+
+.atajo:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(15,37,64,0.1); }
+
+.atajo.activo {
+    background: var(--azul);
+    color: white;
+    border-color: var(--azul);
+    box-shadow: 0 4px 10px rgba(29,95,174,0.3);
+}
+
+.filtro-card {
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.filtro-card .buscador { flex: 1; min-width: 220px; }
+
+.resumen {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+
+.resumen-item {
+    background: white;
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    color: var(--gris);
+}
+
+.resumen-item strong { color: var(--azul-oscuro); font-size: 1.05rem; }
+
+.dia-grupo { margin-bottom: 26px; }
+
+.dia-titulo {
+    font-size: 1.05rem;
+    color: var(--azul-oscuro);
+    margin: 0 0 12px;
+    text-transform: capitalize;
+}
+
+.ruta-card {
+    display: grid;
+    grid-template-columns: 120px 1.4fr 1.6fr auto;
+    gap: 18px;
+    align-items: center;
+    background: white;
+    border: 1px solid var(--borde);
+    border-left: 5px solid var(--azul);
+    border-radius: var(--radio);
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(15,37,64,0.05);
+    transition: transform 0.12s, box-shadow 0.15s;
+}
+
+.ruta-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15,37,64,0.1);
+}
+
+.ruta-horas { display: flex; flex-direction: column; gap: 10px; }
+.hora-bloque { display: flex; flex-direction: column; }
+.hora-etiqueta { font-size: 0.75rem; color: var(--gris); font-weight: 600; }
+.hora-grande { font-size: 1.6rem; font-weight: 800; color: var(--azul-oscuro); line-height: 1.1; }
+.hora-cita { font-size: 1.1rem; font-weight: 700; color: var(--azul); }
+
+.ruta-info { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.ruta-cliente { font-weight: 700; color: var(--azul-oscuro); }
+.ruta-trayecto { font-size: 0.95rem; }
+.ruta-trayecto .flecha { color: var(--azul); margin: 0 4px; }
+.ruta-detalle { font-size: 0.85rem; color: var(--gris); }
+
+.ruta-personas { display: flex; flex-direction: column; gap: 10px; }
+
+.persona {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--gris-claro);
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+
+.persona-vacia { color: var(--gris); font-size: 0.85rem; }
+.persona-datos { display: flex; flex-direction: column; }
+.persona-rol { font-size: 0.75rem; color: var(--gris); font-weight: 600; }
+.persona-nombre { font-weight: 600; font-size: 0.9rem; color: var(--azul-oscuro); }
+.persona-botones { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.sin-telefono { font-size: 0.8rem; color: var(--rojo); }
+
+.btn-wa, .btn-copiar {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: inherit;
+    transition: transform 0.1s, background 0.15s;
+}
+
+.btn-wa {
+    background: #25d366;
+    color: white;
+    border: 1px solid #1fb956;
+    box-shadow: 0 2px 6px rgba(37,211,102,0.35);
+}
+
+.btn-wa:hover { transform: translateY(-1px); background: #1fb956; }
+.btn-wa:disabled { opacity: 0.7; cursor: wait; }
+
+.btn-wa.enviado {
+    background: #e7f8ee;
+    color: #167a3e;
+    border-color: #b7e8c8;
+    box-shadow: none;
+}
+
+.btn-copiar {
+    background: white;
+    color: var(--azul);
+    border: 1px solid var(--borde);
+}
+
+.btn-copiar:hover { transform: translateY(-1px); background: var(--azul-claro); }
+
+.ruta-acciones { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.ruta-acciones .btn-icon { font-size: 1.15rem; text-decoration: none; }
+
+.vacio { text-align: center; padding: 48px 0; color: var(--gris); }
+.vacio-emoji { font-size: 3rem; margin-bottom: 6px; }
+
+.aviso {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translate(-50%, 20px);
+    background: var(--azul-oscuro);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 50;
+}
+
+.aviso.visible { opacity: 1; transform: translate(-50%, 0); }
+.aviso.error { background: var(--rojo); }
+
+/* Vista previa en vivo del formulario */
+.vista-previa {
+    margin-top: 24px;
+    background: var(--azul-claro);
+    border: 1px dashed var(--azul);
+    border-radius: var(--radio);
+    padding: 14px 18px;
+}
+
+.vista-previa h4 { margin: 0 0 8px; color: var(--azul-oscuro); font-size: 0.95rem; }
+.vista-previa ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.92rem; }
+
+@media (max-width: 900px) {
+    .ruta-card { grid-template-columns: 1fr; gap: 14px; }
+    .ruta-horas { flex-direction: row; gap: 24px; }
+    .ruta-acciones { flex-direction: row; justify-content: flex-end; }
+}
+
 /* ---------- Responsive: telefono en vertical ---------- */
 @media (max-width: 600px) {
     .container {

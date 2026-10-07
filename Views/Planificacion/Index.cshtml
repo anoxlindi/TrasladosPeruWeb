@@ -5,134 +5,228 @@
     string desde = filtro.FechaDesde?.ToString("yyyy-MM-dd") ?? "";
     string hasta = filtro.FechaHasta?.ToString("yyyy-MM-dd") ?? "";
     bool automatico = ViewBag.WhatsAppAutomatico ?? false;
+
+    var rutas = Model.ToList();
+    var hoy = HoraPeru.Hoy;
+    var manana = hoy.AddDays(1);
+    var lunes = hoy.AddDays(-(((int)hoy.DayOfWeek + 6) % 7));
+    var domingo = lunes.AddDays(6);
+
+    string hoyTxt = hoy.ToString("yyyy-MM-dd");
+    string mananaTxt = manana.ToString("yyyy-MM-dd");
+    string lunesTxt = lunes.ToString("yyyy-MM-dd");
+    string domingoTxt = domingo.ToString("yyyy-MM-dd");
+
+    bool esHoy = desde == hoyTxt && hasta == hoyTxt;
+    bool esManana = desde == mananaTxt && hasta == mananaTxt;
+    bool esSemana = desde == lunesTxt && hasta == domingoTxt;
+    bool esAdelante = desde == hoyTxt && hasta == "";
+
+    var diasNombre = new[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" };
+
+    int totalRutas = rutas.Count;
+    int totalUnidades = rutas.Select(r => r.Placa.Trim()).Distinct().Count();
+    int totalPersonal = rutas
+        .SelectMany(r => new[] { r.DniChofer?.Trim(), r.DniAyudante?.Trim() })
+        .Where(d => !string.IsNullOrWhiteSpace(d))
+        .Distinct()
+        .Count();
 }
 
 @Html.AntiForgeryToken()
 
 <div class="page-header">
-    <h1>Planificar rutas</h1>
+    <h1>🗓️ Planificar rutas</h1>
     <div class="actions">
-        <a class="btn btn-primary" href="/Planificacion/Crear">+ Planificar ruta</a>
-        <a class="btn btn-secondary" href="/Planificacion/ExportarExcel?FechaDesde=@desde&FechaHasta=@hasta">⭳ Exportar a Excel</a>
+        <a class="btn btn-primary" href="/Planificacion/Crear">➕ Planificar ruta</a>
+        <a class="btn btn-secondary" href="/Planificacion/ExportarExcel?FechaDesde=@desde&FechaHasta=@hasta">📊 Exportar a Excel</a>
     </div>
 </div>
 
-<form method="get" class="card" style="padding:16px 20px; margin-bottom:20px; display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+<div class="atajos">
+    <a class="atajo @(esHoy ? "activo" : "")" href="/Planificacion?FechaDesde=@hoyTxt&FechaHasta=@hoyTxt">☀️ Hoy</a>
+    <a class="atajo @(esManana ? "activo" : "")" href="/Planificacion?FechaDesde=@mananaTxt&FechaHasta=@mananaTxt">🌅 Mañana</a>
+    <a class="atajo @(esSemana ? "activo" : "")" href="/Planificacion?FechaDesde=@lunesTxt&FechaHasta=@domingoTxt">📆 Esta semana</a>
+    <a class="atajo @(esAdelante ? "activo" : "")" href="/Planificacion">⏭️ Hoy en adelante</a>
+</div>
+
+<form method="get" class="card filtro-card">
     <div class="form-group">
-        <label>Desde</label>
+        <label>📅 Desde</label>
         <input type="date" name="FechaDesde" class="input" value="@desde" />
     </div>
     <div class="form-group">
-        <label>Hasta</label>
+        <label>📅 Hasta</label>
         <input type="date" name="FechaHasta" class="input" value="@hasta" />
     </div>
-    <button type="submit" class="btn btn-primary">Filtrar</button>
-    <a href="/Planificacion" class="btn btn-secondary">Hoy en adelante</a>
+    <button type="submit" class="btn btn-primary">🔍 Filtrar</button>
+    <div class="form-group buscador">
+        <label>🔎 Buscar en la lista</label>
+        <input type="search" id="buscador" class="input" placeholder="Cliente, chofer, ayudante, placa o distrito..." autocomplete="off" />
+    </div>
 </form>
 
-@if (!Model.Any())
+@if (!rutas.Any())
 {
-    <p class="empty-state">No hay rutas planificadas en estas fechas. Arma la primera con el botón de arriba.</p>
+    <div class="vacio">
+        <div class="vacio-emoji">🚛</div>
+        <p>No hay rutas planificadas en estas fechas.</p>
+        <a class="btn btn-primary" href="/Planificacion/Crear">➕ Arma la primera ruta</a>
+    </div>
 }
 else
 {
-    <div class="card" style="overflow-x:auto;">
-        <table class="tabla">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Salida</th>
-                    <th>Cita</th>
-                    <th>Cliente</th>
-                    <th>Unidad</th>
-                    <th>Chofer</th>
-                    <th>Ayudante</th>
-                    <th>Ruta</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var r in Model)
-                {
-                    var mensajeChofer = MensajesRuta.Construir(r, true);
-                    var linkChofer = MensajesRuta.LinkWhatsApp(r.TelefonoChofer, mensajeChofer);
-                    var tieneAyudante = !string.IsNullOrWhiteSpace(r.Ayudante);
-                    var mensajeAyudante = tieneAyudante ? MensajesRuta.Construir(r, false) : "";
-                    var linkAyudante = tieneAyudante ? MensajesRuta.LinkWhatsApp(r.TelefonoAyudante, mensajeAyudante) : null;
-
-                    <tr>
-                        <td>@r.Fecha.ToString("dd/MM/yyyy")</td>
-                        <td><strong>@($"{r.HoraSalidaCochera.Hours:00}:{r.HoraSalidaCochera.Minutes:00}")</strong></td>
-                        <td>@(r.HoraCita.HasValue ? $"{r.HoraCita.Value.Hours:00}:{r.HoraCita.Value.Minutes:00}" : "—")</td>
-                        <td>@(r.Cliente ?? "—")</td>
-                        <td><span class="chip">@r.Placa.Trim()</span></td>
-                        <td>
-                            @(r.Chofer ?? "—")
-                            <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
-                                @if (linkChofer == null)
-                                {
-                                    <span style="color:var(--gris); font-size:0.8rem;">sin teléfono</span>
-                                }
-                                else if (automatico)
-                                {
-                                    <button type="button" class="btn btn-secondary btn-enviar" data-id="@r.CodigoPlan" data-destino="chofer" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</button>
-                                }
-                                else
-                                {
-                                    <a href="@linkChofer" class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</a>
-                                }
-                                <button type="button" class="btn btn-secondary btn-copiar" style="padding:4px 10px; font-size:0.8rem;" data-mensaje="@mensajeChofer">Copiar</button>
-                            </div>
-                        </td>
-                        <td>
-                            @if (tieneAyudante)
-                            {
-                                <span>@r.Ayudante</span>
-                                <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
-                                    @if (linkAyudante == null)
-                                    {
-                                        <span style="color:var(--gris); font-size:0.8rem;">sin teléfono</span>
-                                    }
-                                    else if (automatico)
-                                    {
-                                        <button type="button" class="btn btn-secondary btn-enviar" data-id="@r.CodigoPlan" data-destino="ayudante" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</button>
-                                    }
-                                    else
-                                    {
-                                        <a href="@linkAyudante" class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;">📲 Enviar</a>
-                                    }
-                                    <button type="button" class="btn btn-secondary btn-copiar" style="padding:4px 10px; font-size:0.8rem;" data-mensaje="@mensajeAyudante">Copiar</button>
-                                </div>
-                            }
-                            else
-                            {
-                                <span>—</span>
-                            }
-                        </td>
-                        <td>@(r.PuntoInicio) → @(r.PuntoFin)</td>
-                        <td style="white-space:nowrap;">
-                            <a href="/Planificacion/Editar/@(r.CodigoPlan)?fechaDesde=@(desde)&fechaHasta=@(hasta)" class="btn-icon" title="Editar ruta">✏️</a>
-                            <form asp-controller="Planificacion" asp-action="Eliminar" asp-route-id="@r.CodigoPlan"
-                                  asp-route-fechaDesde="@desde" asp-route-fechaHasta="@hasta" method="post"
-                                  onsubmit="return confirm('¿Eliminar esta ruta planificada?');" style="display:inline;">
-                                <button type="submit" class="btn-icon" title="Eliminar">🗑</button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <div class="resumen">
+        <span class="resumen-item">📋 <strong>@totalRutas</strong> @(totalRutas == 1 ? "ruta" : "rutas")</span>
+        <span class="resumen-item">🚚 <strong>@totalUnidades</strong> @(totalUnidades == 1 ? "unidad" : "unidades")</span>
+        <span class="resumen-item">👷 <strong>@totalPersonal</strong> @(totalPersonal == 1 ? "trabajador" : "trabajadores")</span>
+        <span class="resumen-item" id="resumenEnviados">✅ <strong>0</strong> mensajes enviados</span>
     </div>
+
+    @foreach (var dia in rutas.GroupBy(r => r.Fecha.Date))
+    {
+        var etiquetaDia = dia.Key == hoy ? " · ☀️ hoy" : (dia.Key == manana ? " · 🌅 mañana" : "");
+
+        <section class="dia-grupo">
+            <h2 class="dia-titulo">📅 @(diasNombre[(int)dia.Key.DayOfWeek] + " " + dia.Key.ToString("dd/MM/yyyy") + etiquetaDia)</h2>
+
+            @foreach (var r in dia)
+            {
+                var tieneAyudante = !string.IsNullOrWhiteSpace(r.Ayudante);
+                var mensajeChofer = MensajesRuta.Construir(r, true);
+                var mensajeAyudante = tieneAyudante ? MensajesRuta.Construir(r, false) : "";
+
+                var chofer = new PersonaRutaVm
+                {
+                    CodigoPlan = r.CodigoPlan,
+                    Destino = "chofer",
+                    Etiqueta = "🚛 Chofer",
+                    Nombre = r.Chofer ?? "—",
+                    Link = MensajesRuta.LinkWhatsApp(r.TelefonoChofer, mensajeChofer),
+                    Mensaje = mensajeChofer,
+                    Automatico = automatico
+                };
+
+                var ayudante = new PersonaRutaVm
+                {
+                    CodigoPlan = r.CodigoPlan,
+                    Destino = "ayudante",
+                    Etiqueta = "🧰 Ayudante",
+                    Nombre = r.Ayudante ?? "—",
+                    Link = tieneAyudante ? MensajesRuta.LinkWhatsApp(r.TelefonoAyudante, mensajeAyudante) : null,
+                    Mensaje = mensajeAyudante,
+                    Automatico = automatico
+                };
+
+                var textoBusqueda = $"{r.Cliente} {r.Chofer} {r.Ayudante} {r.Placa} {r.PuntoInicio} {r.PuntoFin} {r.Direccion}".ToLowerInvariant();
+
+                <article class="ruta-card" data-buscar="@textoBusqueda">
+                    <div class="ruta-horas">
+                        <div class="hora-bloque">
+                            <span class="hora-etiqueta">⏰ Salida</span>
+                            <span class="hora-grande">@($"{r.HoraSalidaCochera.Hours:00}:{r.HoraSalidaCochera.Minutes:00}")</span>
+                        </div>
+                        <div class="hora-bloque">
+                            <span class="hora-etiqueta">🤝 Cita</span>
+                            <span class="hora-cita">@(r.HoraCita.HasValue ? $"{r.HoraCita.Value.Hours:00}:{r.HoraCita.Value.Minutes:00}" : "—")</span>
+                        </div>
+                    </div>
+
+                    <div class="ruta-info">
+                        <div class="ruta-cliente">🏢 @(r.Cliente ?? "—")</div>
+                        <div class="ruta-trayecto">📍 @r.PuntoInicio <span class="flecha">➜</span> @r.PuntoFin</div>
+                        @if (!string.IsNullOrWhiteSpace(r.Direccion))
+                        {
+                            <div class="ruta-detalle">📌 @r.Direccion</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(r.Observaciones))
+                        {
+                            <div class="ruta-detalle">📝 @r.Observaciones</div>
+                        }
+                        <span class="chip">🚚 @r.Placa.Trim()</span>
+                    </div>
+
+                    <div class="ruta-personas">
+                        <partial name="_PersonaRuta" model="chofer" />
+                        @if (tieneAyudante)
+                        {
+                            <partial name="_PersonaRuta" model="ayudante" />
+                        }
+                        else
+                        {
+                            <div class="persona persona-vacia">🧰 Sin ayudante</div>
+                        }
+                    </div>
+
+                    <div class="ruta-acciones">
+                        <a href="/Planificacion/Editar/@(r.CodigoPlan)?fechaDesde=@(desde)&fechaHasta=@(hasta)" class="btn-icon" title="Editar ruta">✏️</a>
+                        <form asp-controller="Planificacion" asp-action="Eliminar" asp-route-id="@r.CodigoPlan"
+                              asp-route-fechaDesde="@desde" asp-route-fechaHasta="@hasta" method="post"
+                              onsubmit="return confirm('¿Eliminar esta ruta planificada?');" style="display:inline;">
+                            <button type="submit" class="btn-icon" title="Eliminar">🗑️</button>
+                        </form>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+
+    <p class="empty-state" id="sinResultados" style="display:none;">🔎 Ninguna ruta coincide con lo que escribiste.</p>
 }
 
+<div id="aviso" class="aviso" role="status"></div>
+
 <script>
-    // Boton "Enviar" (envio automatico): manda el mensaje por la API de WhatsApp sin salir de esta pagina
-    document.querySelectorAll('.btn-enviar').forEach(function (boton) {
+    // ---------- Aviso flotante ----------
+    var avisoTimer = null;
+    function mostrarAviso(texto, esError) {
+        var aviso = document.getElementById('aviso');
+        aviso.textContent = texto;
+        aviso.className = 'aviso visible' + (esError ? ' error' : '');
+        clearTimeout(avisoTimer);
+        avisoTimer = setTimeout(function () { aviso.className = 'aviso'; }, 2500);
+    }
+
+    // ---------- Recordar a quien ya se le envio (solo en este navegador) ----------
+    function yaEnviado(clave) {
+        try { return localStorage.getItem('enviado:' + clave) === '1'; } catch (e) { return false; }
+    }
+    function guardarEnviado(clave) {
+        try { localStorage.setItem('enviado:' + clave, '1'); } catch (e) { }
+    }
+    function marcarEnviado(boton) {
+        boton.classList.add('enviado');
+        boton.innerText = '✅ Enviado';
+        boton.title = 'Ya enviado. Haz clic otra vez si quieres volver a enviarlo.';
+        actualizarContador();
+    }
+    function actualizarContador() {
+        var total = document.querySelectorAll('.btn-wa.enviado').length;
+        var cont = document.getElementById('resumenEnviados');
+        if (cont) cont.innerHTML = '✅ <strong>' + total + '</strong> ' + (total === 1 ? 'mensaje enviado' : 'mensajes enviados');
+    }
+
+    document.querySelectorAll('.btn-wa').forEach(function (boton) {
+        var clave = boton.getAttribute('data-clave');
+        if (yaEnviado(clave)) marcarEnviado(boton);
+    });
+    actualizarContador();
+
+    // Envio con link directo (abre la app de WhatsApp): se marca al hacer clic
+    document.querySelectorAll('a.btn-wa').forEach(function (enlace) {
+        enlace.addEventListener('click', function () {
+            guardarEnviado(enlace.getAttribute('data-clave'));
+            marcarEnviado(enlace);
+        });
+    });
+
+    // Envio automatico (API): manda el mensaje sin salir de esta pagina
+    document.querySelectorAll('button.btn-enviar').forEach(function (boton) {
         boton.addEventListener('click', function () {
             if (boton.disabled) return;
             var original = boton.innerText;
             boton.disabled = true;
-            boton.innerText = 'Enviando...';
+            boton.innerText = '⏳ Enviando...';
 
             var datos = new URLSearchParams();
             datos.append('id', boton.getAttribute('data-id'));
@@ -147,31 +241,29 @@ else
             })
             .then(function (respuesta) { return respuesta.json(); })
             .then(function (resultado) {
+                boton.disabled = false;
                 if (resultado.ok) {
-                    boton.innerText = '✓ Enviado';
+                    guardarEnviado(boton.getAttribute('data-clave'));
+                    marcarEnviado(boton);
+                    mostrarAviso('✅ Mensaje enviado');
                 } else {
-                    boton.disabled = false;
                     boton.innerText = original;
-                    alert('No se pudo enviar: ' + resultado.mensaje);
+                    mostrarAviso('❌ No se pudo enviar: ' + resultado.mensaje, true);
                 }
             })
             .catch(function () {
                 boton.disabled = false;
                 boton.innerText = original;
-                alert('No se pudo enviar. Revisa tu conexión o vuelve a iniciar sesión.');
+                mostrarAviso('❌ No se pudo enviar. Revisa tu conexión o vuelve a iniciar sesión.', true);
             });
         });
     });
 
-    // Boton "Copiar": deja el mensaje en el portapapeles por si prefieren pegarlo a mano
+    // ---------- Copiar mensaje ----------
     document.querySelectorAll('.btn-copiar').forEach(function (boton) {
         boton.addEventListener('click', function () {
             var texto = boton.getAttribute('data-mensaje') || '';
-            var original = boton.innerText;
-            function listo() {
-                boton.innerText = '¡Copiado!';
-                setTimeout(function () { boton.innerText = original; }, 1500);
-            }
+            function listo() { mostrarAviso('📋 Mensaje copiado'); }
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(texto).then(listo);
             } else {
@@ -185,4 +277,24 @@ else
             }
         });
     });
+
+    // ---------- Buscador en vivo ----------
+    var buscador = document.getElementById('buscador');
+    if (buscador) {
+        buscador.addEventListener('input', function () {
+            var texto = buscador.value.trim().toLowerCase();
+            var visibles = 0;
+            document.querySelectorAll('.ruta-card').forEach(function (tarjeta) {
+                var coincide = texto === '' || (tarjeta.getAttribute('data-buscar') || '').indexOf(texto) !== -1;
+                tarjeta.style.display = coincide ? '' : 'none';
+                if (coincide) visibles++;
+            });
+            document.querySelectorAll('.dia-grupo').forEach(function (grupo) {
+                var hay = grupo.querySelectorAll('.ruta-card:not([style*="display: none"])').length > 0;
+                grupo.style.display = hay ? '' : 'none';
+            });
+            var aviso = document.getElementById('sinResultados');
+            if (aviso) aviso.style.display = visibles === 0 ? 'block' : 'none';
+        });
+    }
 </script>
