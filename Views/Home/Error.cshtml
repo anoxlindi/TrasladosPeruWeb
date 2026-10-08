@@ -1,0 +1,27 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Ocurrió un error";
+}
+
+<div class="page-header">
+    <h1>⚠️ Ocurrió un error</h1>
+</div>
+
+<div class="card">
+    <p>Algo falló al procesar tu solicitud. Si vuelve a pasar, avísale a soporte con estos datos:</p>
+
+    @if (!string.IsNullOrWhiteSpace(Model.RutaOriginal))
+    {
+        <p><strong>Página:</strong> @Model.RutaOriginal</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+    {
+        <p><strong>Detalle:</strong> @Model.Mensaje</p>
+    }
+    @if (Model.ShowRequestId)
+    {
+        <p><strong>Id:</strong> <code>@Model.RequestId</code></p>
+    }
+
+    <a href="/Planificacion" class="btn btn-secondary">Volver a Planificar rutas</a>
+</div>
