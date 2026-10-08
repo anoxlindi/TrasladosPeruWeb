@@ -121,7 +121,7 @@ public class RecorridoRepository
                     WHERE e.Estado = 'Activo'
                       AND (EXISTS (SELECT 1 FROM Conductor c WHERE c.Dni = e.Dni)
                         OR EXISTS (SELECT 1 FROM Asistente a WHERE a.Dni = e.Dni))
-                    ORDER BY e.Nombres";
+                    ORDER BY CONCAT(e.Nombres, ' ', e.Apellidos)";
         return await db.QueryAsync<OpcionSelect>(sql);
     }
 
