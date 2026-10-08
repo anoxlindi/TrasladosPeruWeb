@@ -154,7 +154,9 @@ public class PlanificacionController : Controller
             "Codigo", "Fecha", "Salida de cochera", "Hora de cita", "Cliente", "Placa",
             "Doblete", "Chofer", "Telefono chofer", "Ayudante 1", "Telefono ayudante 1",
             "Ayudante 2", "Telefono ayudante 2",
-            "Punto inicio", "Punto final", "Direccion", "Observaciones"
+            "Punto inicio", "Punto final", "Direccion", "Observaciones",
+            "Salida viaje 2", "Hora cita viaje 2", "Cliente viaje 2",
+            "Punto inicio viaje 2", "Punto final viaje 2", "Direccion viaje 2"
         };
         for (int i = 0; i < encabezados.Length; i++)
         {
@@ -184,6 +186,14 @@ public class PlanificacionController : Controller
             hoja.Cell(fila, 15).Value = r.PuntoFin ?? "-";
             hoja.Cell(fila, 16).Value = r.Direccion ?? "-";
             hoja.Cell(fila, 17).Value = r.Observaciones ?? "-";
+            hoja.Cell(fila, 18).Value = r.HoraSalidaCochera2.HasValue
+                ? $"{r.HoraSalidaCochera2.Value.Hours:00}:{r.HoraSalidaCochera2.Value.Minutes:00}" : "-";
+            hoja.Cell(fila, 19).Value = r.HoraCita2.HasValue
+                ? $"{r.HoraCita2.Value.Hours:00}:{r.HoraCita2.Value.Minutes:00}" : "-";
+            hoja.Cell(fila, 20).Value = r.Cliente2 ?? "-";
+            hoja.Cell(fila, 21).Value = r.PuntoInicio2 ?? "-";
+            hoja.Cell(fila, 22).Value = r.PuntoFin2 ?? "-";
+            hoja.Cell(fila, 23).Value = r.Direccion2 ?? "-";
             fila++;
         }
         hoja.Columns().AdjustToContents();
@@ -224,6 +234,27 @@ public class PlanificacionController : Controller
         if (personas.Count != personas.Distinct().Count())
         {
             ModelState.AddModelError("", "El chofer y los ayudantes no pueden repetirse en la misma ruta.");
+        }
+
+        // Si es doblete, el 2do viaje necesita sus propios datos (mismo chofer y unidad del primero)
+        if (m.EsDoblete)
+        {
+            if (!m.HoraSalidaCochera2.HasValue)
+            {
+                ModelState.AddModelError("", "Indica la hora de salida del 2do viaje (doblete).");
+            }
+            if (m.HoraCita2.HasValue && m.HoraSalidaCochera2.HasValue && m.HoraCita2.Value < m.HoraSalidaCochera2.Value)
+            {
+                ModelState.AddModelError("", "La hora de la cita del 2do viaje no puede ser anterior a su salida de cochera.");
+            }
+            if (string.IsNullOrWhiteSpace(m.Ruc2) && string.IsNullOrWhiteSpace(m.ClienteOtro2))
+            {
+                ModelState.AddModelError("", "Selecciona el cliente del 2do viaje (doblete), o escribe el nombre si es otro.");
+            }
+            if (string.IsNullOrWhiteSpace(m.PuntoInicio2) || string.IsNullOrWhiteSpace(m.PuntoFin2))
+            {
+                ModelState.AddModelError("", "Indica el punto de inicio y de llegada del 2do viaje (doblete).");
+            }
         }
     }
 

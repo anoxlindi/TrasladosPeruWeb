@@ -11,6 +11,10 @@
         ? $"{Model.HoraSalidaCochera.Value.Hours:00}:{Model.HoraSalidaCochera.Value.Minutes:00}" : "";
     string horaCita = Model.HoraCita.HasValue
         ? $"{Model.HoraCita.Value.Hours:00}:{Model.HoraCita.Value.Minutes:00}" : "";
+    string horaSalida2 = Model.HoraSalidaCochera2.HasValue
+        ? $"{Model.HoraSalidaCochera2.Value.Hours:00}:{Model.HoraSalidaCochera2.Value.Minutes:00}" : "";
+    string horaCita2 = Model.HoraCita2.HasValue
+        ? $"{Model.HoraCita2.Value.Hours:00}:{Model.HoraCita2.Value.Minutes:00}" : "";
 }
 
 <h3 class="seccion">📅 Fecha y horarios</h3>
@@ -32,8 +36,8 @@
 
     <div class="form-group form-check-group">
         <label class="check-label">
-            <input asp-for="EsDoblete" type="checkbox" class="check" value="true" />
-            🔁 Esta ruta es doblete (el chofer hace 2 viajes)
+            <input asp-for="EsDoblete" type="checkbox" class="check" value="true" id="chkDoblete" />
+            🔁 Esta ruta es doblete (el chofer tiene otro viaje ese día)
         </label>
     </div>
 </div>
@@ -141,6 +145,65 @@
     </div>
 </div>
 
+<div id="bloqueViaje2" class="bloque-viaje2">
+    <h3 class="seccion">🔁 Viaje 2 (doblete)</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label>⏰ Hora de salida (2do viaje)</label>
+            <input asp-for="HoraSalidaCochera2" type="time" class="input" value="@horaSalida2" />
+        </div>
+
+        <div class="form-group">
+            <label>🤝 Hora de la cita (2do viaje, opcional)</label>
+            <input asp-for="HoraCita2" type="time" class="input" value="@horaCita2" />
+        </div>
+
+        <div class="form-group">
+            <label>🏢 Cliente (2do viaje)</label>
+            <select asp-for="Ruc2" class="input" onchange="document.getElementById('otroClienteBox2').style.display = this.value === '' ? 'block' : 'none';">
+                <option value="">-- Otro (escribir abajo) --</option>
+                @foreach (var c in clientes)
+                {
+                    <option value="@c.Codigo">@c.Texto</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group" id="otroClienteBox2">
+            <label>Si es "Otro", escribe el nombre del cliente (2do viaje)</label>
+            <input asp-for="ClienteOtro2" class="input" placeholder="Nombre de la empresa" />
+        </div>
+
+        <div class="form-group">
+            <label>📍 Punto de inicio (2do viaje)</label>
+            <select asp-for="PuntoInicio2" class="input">
+                <option value="">-- Selecciona un distrito --</option>
+                @foreach (var d in distritos)
+                {
+                    <option value="@d">@d</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>🏁 Punto final (2do viaje)</label>
+            <select asp-for="PuntoFin2" class="input">
+                <option value="">-- Selecciona un distrito --</option>
+                @foreach (var d in distritosDestino)
+                {
+                    <option value="@d">@d</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>📌 Dirección exacta (2do viaje, opcional)</label>
+            <input asp-for="Direccion2" class="input" maxlength="150" placeholder="Ej: Av. Industrial 123, Lurín" />
+        </div>
+    </div>
+    <span class="ayuda-campo">El chofer y la unidad son los mismos del viaje 1. Esto se agrega como "Viaje 2" en su mensaje de WhatsApp.</span>
+</div>
+
 <script>
     // Respaldo: deja marcado en cada lista lo que ya tenia la ruta (al editar)
     (function () {
@@ -156,11 +219,30 @@
         marcar("DniAyudante2", "@Model.DniAyudante2");
         marcar("PuntoInicio", "@Model.PuntoInicio");
         marcar("PuntoFin", "@Model.PuntoFin");
+        marcar("Ruc2", "@Model.Ruc2");
+        marcar("PuntoInicio2", "@Model.PuntoInicio2");
+        marcar("PuntoFin2", "@Model.PuntoFin2");
 
         var otroBox = document.getElementById('otroClienteBox');
         var rucSelect = document.querySelector('select[name="Ruc"]');
         if (otroBox && rucSelect) {
             otroBox.style.display = rucSelect.value === "" ? "block" : "none";
+        }
+        var otroBox2 = document.getElementById('otroClienteBox2');
+        var rucSelect2 = document.querySelector('select[name="Ruc2"]');
+        if (otroBox2 && rucSelect2) {
+            otroBox2.style.display = rucSelect2.value === "" ? "block" : "none";
+        }
+
+        // Muestra u oculta el bloque "Viaje 2" segun la casilla de doblete
+        var chkDoblete = document.getElementById('chkDoblete');
+        var bloqueViaje2 = document.getElementById('bloqueViaje2');
+        function actualizarBloqueViaje2() {
+            bloqueViaje2.style.display = chkDoblete.checked ? 'block' : 'none';
+        }
+        if (chkDoblete && bloqueViaje2) {
+            chkDoblete.addEventListener('change', actualizarBloqueViaje2);
+            actualizarBloqueViaje2();
         }
     })();
 </script>
@@ -184,11 +266,12 @@
         function actualizar() {
             var cliente = textoSeleccionado('Ruc') || valor('ClienteOtro');
             var doblete = document.querySelector('input[name="EsDoblete"]');
+            var esDoblete = doblete && doblete.checked;
             var lineas = [
                 ['📅', 'Fecha', valor('Fecha')],
                 ['⏰', 'Salida de cochera', valor('HoraSalidaCochera')],
                 ['🤝', 'Cita', valor('HoraCita')],
-                ['🔁', 'Doblete', (doblete && doblete.checked) ? 'Sí' : ''],
+                ['🔁', 'Doblete', esDoblete ? 'Sí' : ''],
                 ['🏢', 'Cliente', cliente],
                 ['🚚', 'Unidad', textoSeleccionado('CodigoUnidad')],
                 ['🚛', 'Chofer', textoSeleccionado('DniChofer')],
@@ -198,6 +281,13 @@
                 ['📌', 'Dirección', valor('Direccion')],
                 ['📝', 'Nota', valor('Observaciones')]
             ];
+            if (esDoblete) {
+                var cliente2 = textoSeleccionado('Ruc2') || valor('ClienteOtro2');
+                lineas.push(['⏰', 'Viaje 2 - Salida', valor('HoraSalidaCochera2')]);
+                lineas.push(['🤝', 'Viaje 2 - Cita', valor('HoraCita2')]);
+                lineas.push(['🏢', 'Viaje 2 - Cliente', cliente2]);
+                lineas.push(['📍', 'Viaje 2 - Ruta', (valor('PuntoInicio2') || '?') + ' ➜ ' + (valor('PuntoFin2') || '?')]);
+            }
             var lista = document.getElementById('vistaPrevia');
             lista.innerHTML = '';
             lineas.forEach(function (l) {

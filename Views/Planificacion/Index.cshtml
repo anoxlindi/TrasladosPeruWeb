@@ -131,7 +131,8 @@ else
                     Automatico = automatico
                 };
 
-                var textoBusqueda = $"{r.Cliente} {r.Chofer} {r.Ayudante} {r.Ayudante2} {r.Placa} {r.PuntoInicio} {r.PuntoFin} {r.Direccion}".ToLowerInvariant();
+                var tieneViaje2 = r.EsDoblete && !string.IsNullOrWhiteSpace(r.PuntoInicio2) && !string.IsNullOrWhiteSpace(r.PuntoFin2);
+                var textoBusqueda = $"{r.Cliente} {r.Chofer} {r.Ayudante} {r.Ayudante2} {r.Placa} {r.PuntoInicio} {r.PuntoFin} {r.Direccion} {r.Cliente2} {r.PuntoInicio2} {r.PuntoFin2}".ToLowerInvariant();
 
                 <article class="ruta-card @(r.EsDoblete ? "ruta-doblete" : "")" data-buscar="@textoBusqueda">
                     <div class="ruta-horas">
@@ -161,6 +162,26 @@ else
                             <div class="ruta-detalle">📝 @r.Observaciones</div>
                         }
                         <span class="chip">🚚 @r.Placa.Trim()</span>
+
+                        @if (tieneViaje2)
+                        {
+                            <div class="viaje-bloque">
+                                <div class="viaje-titulo">🔁 Viaje 2</div>
+                                <div class="ruta-cliente">🏢 @(r.Cliente2 ?? "—")</div>
+                                <div class="ruta-trayecto">📍 @r.PuntoInicio2 <span class="flecha">➜</span> @r.PuntoFin2</div>
+                                <div class="ruta-detalle">
+                                    ⏰ @(r.HoraSalidaCochera2.HasValue ? $"{r.HoraSalidaCochera2.Value.Hours:00}:{r.HoraSalidaCochera2.Value.Minutes:00}" : "—")
+                                    @if (r.HoraCita2.HasValue)
+                                    {
+                                        <text> · 🤝 @($"{r.HoraCita2.Value.Hours:00}:{r.HoraCita2.Value.Minutes:00}")</text>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(r.Direccion2))
+                                {
+                                    <div class="ruta-detalle">📌 @r.Direccion2</div>
+                                }
+                            </div>
+                        }
                     </div>
 
                     <div class="ruta-personas">

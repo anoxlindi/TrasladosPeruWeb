@@ -262,6 +262,33 @@ body {
 
 .ruta-card.ruta-doblete { border-left-color: #f5a623; }
 
+.bloque-viaje2 {
+    display: none;
+    background: #fff8ec;
+    border: 1px dashed #f5a623;
+    border-radius: var(--radio);
+    padding: 4px 18px 18px;
+    margin-top: 10px;
+}
+
+.bloque-viaje2 .seccion { color: #b36b00; }
+
+.viaje-bloque {
+    background: var(--gris-claro);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+
+.viaje-bloque .viaje-titulo {
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #b36b00;
+    margin-bottom: 4px;
+}
+
+
+
 .chip-doblete {
     background: #fff4e0;
     color: #b36b00;

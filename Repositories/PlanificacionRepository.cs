@@ -26,11 +26,14 @@ public class PlanificacionRepository
                p.DniAyudante2,
                ea2.Nombres + ' ' + ea2.Apellidos AS Ayudante2,
                ea2.Telefono AS TelefonoAyudante2,
-               p.EsDoblete,
-               p.PuntoInicio, p.PuntoFin, p.Direccion, p.Observaciones
+               p.PuntoInicio, p.PuntoFin, p.Direccion, p.Observaciones,
+               p.EsDoblete, p.HoraSalidaCochera2, p.HoraCita2,
+               COALESCE(cl2.RazonSocial, p.ClienteOtro2) AS Cliente2,
+               p.PuntoInicio2, p.PuntoFin2, p.Direccion2
         FROM RutaPlanificada p
         JOIN UnidadTransporte u ON u.CodigoUnidad = p.CodigoUnidad
         LEFT JOIN Cliente cl ON cl.Ruc = p.Ruc
+        LEFT JOIN Cliente cl2 ON cl2.Ruc = p.Ruc2
         LEFT JOIN Empleado ec ON ec.Dni = p.DniChofer
         LEFT JOIN Empleado ea ON ea.Dni = p.DniAyudante
         LEFT JOIN Empleado ea2 ON ea2.Dni = p.DniAyudante2";
@@ -68,8 +71,10 @@ public class PlanificacionRepository
     {
         using var db = _conexion.CrearConexion();
         var sql = @"SELECT CodigoPlan, Fecha, HoraSalidaCochera, HoraCita, Ruc, ClienteOtro,
-                           CodigoUnidad, DniChofer, DniAyudante, DniAyudante2, EsDoblete,
-                           PuntoInicio, PuntoFin, Direccion, Observaciones
+                           CodigoUnidad, DniChofer, DniAyudante, DniAyudante2,
+                           PuntoInicio, PuntoFin, Direccion, Observaciones,
+                           EsDoblete, HoraSalidaCochera2, HoraCita2, Ruc2, ClienteOtro2,
+                           PuntoInicio2, PuntoFin2, Direccion2
                     FROM RutaPlanificada
                     WHERE CodigoPlan = @codigoPlan";
         return await db.QueryFirstOrDefaultAsync<RutaPlanificadaForm>(sql, new { codigoPlan });
@@ -80,12 +85,16 @@ public class PlanificacionRepository
         using var db = _conexion.CrearConexion();
         var sql = @"INSERT INTO RutaPlanificada
                         (Fecha, HoraSalidaCochera, HoraCita, Ruc, ClienteOtro, CodigoUnidad,
-                         DniChofer, DniAyudante, DniAyudante2, EsDoblete,
-                         PuntoInicio, PuntoFin, Direccion, Observaciones)
+                         DniChofer, DniAyudante, DniAyudante2,
+                         PuntoInicio, PuntoFin, Direccion, Observaciones,
+                         EsDoblete, HoraSalidaCochera2, HoraCita2, Ruc2, ClienteOtro2,
+                         PuntoInicio2, PuntoFin2, Direccion2)
                     VALUES
                         (@Fecha, @HoraSalidaCochera, @HoraCita, @Ruc, @ClienteOtro, @CodigoUnidad,
-                         @DniChofer, @DniAyudante, @DniAyudante2, @EsDoblete,
-                         @PuntoInicio, @PuntoFin, @Direccion, @Observaciones)";
+                         @DniChofer, @DniAyudante, @DniAyudante2,
+                         @PuntoInicio, @PuntoFin, @Direccion, @Observaciones,
+                         @EsDoblete, @HoraSalidaCochera2, @HoraCita2, @Ruc2, @ClienteOtro2,
+                         @PuntoInicio2, @PuntoFin2, @Direccion2)";
         await db.ExecuteAsync(sql, ParametrosDe(f));
     }
 
@@ -96,9 +105,11 @@ public class PlanificacionRepository
                         Fecha = @Fecha, HoraSalidaCochera = @HoraSalidaCochera, HoraCita = @HoraCita,
                         Ruc = @Ruc, ClienteOtro = @ClienteOtro, CodigoUnidad = @CodigoUnidad,
                         DniChofer = @DniChofer, DniAyudante = @DniAyudante, DniAyudante2 = @DniAyudante2,
-                        EsDoblete = @EsDoblete,
                         PuntoInicio = @PuntoInicio, PuntoFin = @PuntoFin,
-                        Direccion = @Direccion, Observaciones = @Observaciones
+                        Direccion = @Direccion, Observaciones = @Observaciones,
+                        EsDoblete = @EsDoblete, HoraSalidaCochera2 = @HoraSalidaCochera2, HoraCita2 = @HoraCita2,
+                        Ruc2 = @Ruc2, ClienteOtro2 = @ClienteOtro2,
+                        PuntoInicio2 = @PuntoInicio2, PuntoFin2 = @PuntoFin2, Direccion2 = @Direccion2
                     WHERE CodigoPlan = @CodigoPlan";
         await db.ExecuteAsync(sql, ParametrosDe(f));
     }
@@ -109,11 +120,12 @@ public class PlanificacionRepository
         await db.ExecuteAsync("DELETE FROM RutaPlanificada WHERE CodigoPlan = @codigoPlan", new { codigoPlan });
     }
 
-    // Normaliza los textos vacios a NULL (cliente del catalogo vs "otro", sin ayudante, etc.)
+    // Normaliza los textos vacios a NULL (cliente del catalogo vs "otro", sin ayudante, segundo viaje vacio, etc.)
     private static DynamicParameters ParametrosDe(RutaPlanificadaForm f)
     {
         var p = new DynamicParameters();
         var usaCatalogo = !string.IsNullOrWhiteSpace(f.Ruc);
+        var usaCatalogo2 = !string.IsNullOrWhiteSpace(f.Ruc2);
 
         p.Add("CodigoPlan", f.CodigoPlan);
         p.Add("Fecha", f.Fecha.Date);
@@ -125,11 +137,20 @@ public class PlanificacionRepository
         p.Add("DniChofer", f.DniChofer);
         p.Add("DniAyudante", string.IsNullOrWhiteSpace(f.DniAyudante) ? null : f.DniAyudante);
         p.Add("DniAyudante2", string.IsNullOrWhiteSpace(f.DniAyudante2) ? null : f.DniAyudante2);
-        p.Add("EsDoblete", f.EsDoblete);
         p.Add("PuntoInicio", f.PuntoInicio);
         p.Add("PuntoFin", f.PuntoFin);
         p.Add("Direccion", string.IsNullOrWhiteSpace(f.Direccion) ? null : f.Direccion.Trim());
         p.Add("Observaciones", string.IsNullOrWhiteSpace(f.Observaciones) ? null : f.Observaciones.Trim());
+
+        // Datos del 2do viaje: si no es doblete, se guardan en NULL aunque hayan quedado datos sueltos en el formulario
+        p.Add("EsDoblete", f.EsDoblete);
+        p.Add("HoraSalidaCochera2", f.EsDoblete ? f.HoraSalidaCochera2 : null);
+        p.Add("HoraCita2", f.EsDoblete ? f.HoraCita2 : null);
+        p.Add("Ruc2", f.EsDoblete && usaCatalogo2 ? f.Ruc2 : null);
+        p.Add("ClienteOtro2", f.EsDoblete && !usaCatalogo2 ? f.ClienteOtro2?.Trim() : null);
+        p.Add("PuntoInicio2", f.EsDoblete ? f.PuntoInicio2 : null);
+        p.Add("PuntoFin2", f.EsDoblete ? f.PuntoFin2 : null);
+        p.Add("Direccion2", f.EsDoblete && !string.IsNullOrWhiteSpace(f.Direccion2) ? f.Direccion2.Trim() : null);
         return p;
     }
 }
