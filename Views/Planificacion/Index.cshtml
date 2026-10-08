@@ -27,7 +27,7 @@
     int totalRutas = rutas.Count;
     int totalUnidades = rutas.Select(r => r.Placa.Trim()).Distinct().Count();
     int totalPersonal = rutas
-        .SelectMany(r => new[] { r.DniChofer?.Trim(), r.DniAyudante?.Trim() })
+        .SelectMany(r => new[] { r.DniChofer?.Trim(), r.DniAyudante?.Trim(), r.DniAyudante2?.Trim() })
         .Where(d => !string.IsNullOrWhiteSpace(d))
         .Distinct()
         .Count();
@@ -93,8 +93,10 @@ else
             @foreach (var r in dia)
             {
                 var tieneAyudante = !string.IsNullOrWhiteSpace(r.Ayudante);
-                var mensajeChofer = MensajesRuta.Construir(r, true);
-                var mensajeAyudante = tieneAyudante ? MensajesRuta.Construir(r, false) : "";
+                var tieneAyudante2 = !string.IsNullOrWhiteSpace(r.Ayudante2);
+                var mensajeChofer = MensajesRuta.Construir(r, "chofer");
+                var mensajeAyudante = tieneAyudante ? MensajesRuta.Construir(r, "ayudante1") : "";
+                var mensajeAyudante2 = tieneAyudante2 ? MensajesRuta.Construir(r, "ayudante2") : "";
 
                 var chofer = new PersonaRutaVm
                 {
@@ -110,17 +112,28 @@ else
                 var ayudante = new PersonaRutaVm
                 {
                     CodigoPlan = r.CodigoPlan,
-                    Destino = "ayudante",
-                    Etiqueta = "🧰 Ayudante",
+                    Destino = "ayudante1",
+                    Etiqueta = "🧰 Ayudante 1",
                     Nombre = r.Ayudante ?? "—",
                     Link = tieneAyudante ? MensajesRuta.LinkWhatsApp(r.TelefonoAyudante, mensajeAyudante) : null,
                     Mensaje = mensajeAyudante,
                     Automatico = automatico
                 };
 
-                var textoBusqueda = $"{r.Cliente} {r.Chofer} {r.Ayudante} {r.Placa} {r.PuntoInicio} {r.PuntoFin} {r.Direccion}".ToLowerInvariant();
+                var ayudante2 = new PersonaRutaVm
+                {
+                    CodigoPlan = r.CodigoPlan,
+                    Destino = "ayudante2",
+                    Etiqueta = "🧰 Ayudante 2",
+                    Nombre = r.Ayudante2 ?? "—",
+                    Link = tieneAyudante2 ? MensajesRuta.LinkWhatsApp(r.TelefonoAyudante2, mensajeAyudante2) : null,
+                    Mensaje = mensajeAyudante2,
+                    Automatico = automatico
+                };
 
-                <article class="ruta-card" data-buscar="@textoBusqueda">
+                var textoBusqueda = $"{r.Cliente} {r.Chofer} {r.Ayudante} {r.Ayudante2} {r.Placa} {r.PuntoInicio} {r.PuntoFin} {r.Direccion}".ToLowerInvariant();
+
+                <article class="ruta-card @(r.EsDoblete ? "ruta-doblete" : "")" data-buscar="@textoBusqueda">
                     <div class="ruta-horas">
                         <div class="hora-bloque">
                             <span class="hora-etiqueta">⏰ Salida</span>
@@ -133,6 +146,10 @@ else
                     </div>
 
                     <div class="ruta-info">
+                        @if (r.EsDoblete)
+                        {
+                            <span class="chip chip-doblete">🔁 Doblete</span>
+                        }
                         <div class="ruta-cliente">🏢 @(r.Cliente ?? "—")</div>
                         <div class="ruta-trayecto">📍 @r.PuntoInicio <span class="flecha">➜</span> @r.PuntoFin</div>
                         @if (!string.IsNullOrWhiteSpace(r.Direccion))
@@ -155,6 +172,10 @@ else
                         else
                         {
                             <div class="persona persona-vacia">🧰 Sin ayudante</div>
+                        }
+                        @if (tieneAyudante2)
+                        {
+                            <partial name="_PersonaRuta" model="ayudante2" />
                         }
                     </div>
 

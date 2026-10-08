@@ -5,6 +5,7 @@
     var ayudantes = (IEnumerable<OpcionSelect>)ViewBag.Ayudantes;
     var unidades = (IEnumerable<OpcionSelect>)ViewBag.Unidades;
     var distritos = (string[])ViewBag.Distritos;
+    var distritosDestino = (string[])ViewBag.DistritosDestino;
 
     string horaSalida = Model.HoraSalidaCochera.HasValue
         ? $"{Model.HoraSalidaCochera.Value.Hours:00}:{Model.HoraSalidaCochera.Value.Minutes:00}" : "";
@@ -27,6 +28,13 @@
     <div class="form-group">
         <label>🤝 Hora de la cita (opcional)</label>
         <input asp-for="HoraCita" type="time" class="input" value="@horaCita" />
+    </div>
+
+    <div class="form-group form-check-group">
+        <label class="check-label">
+            <input asp-for="EsDoblete" type="checkbox" class="check" value="true" />
+            🔁 Esta ruta es doblete (el chofer hace 2 viajes)
+        </label>
     </div>
 </div>
 
@@ -74,7 +82,7 @@
     </div>
 
     <div class="form-group">
-        <label>🧰 Ayudante</label>
+        <label>🧰 Ayudante 1</label>
         <select asp-for="DniAyudante" class="input">
             <option value="">-- Sin ayudante --</option>
             @foreach (var a in ayudantes)
@@ -82,6 +90,18 @@
                 <option value="@a.Codigo">@a.Texto</option>
             }
         </select>
+    </div>
+
+    <div class="form-group">
+        <label>🧰 Ayudante 2 (opcional)</label>
+        <select asp-for="DniAyudante2" class="input">
+            <option value="">-- Sin segundo ayudante --</option>
+            @foreach (var a in ayudantes)
+            {
+                <option value="@a.Codigo">@a.Texto</option>
+            }
+        </select>
+        <span class="ayuda-campo">Un chofer también puede ir como ayudante: aparece en la misma lista.</span>
     </div>
 </div>
 
@@ -102,11 +122,12 @@
         <label>🏁 Punto final</label>
         <select asp-for="PuntoFin" class="input">
             <option value="">-- Selecciona un distrito --</option>
-            @foreach (var d in distritos)
+            @foreach (var d in distritosDestino)
             {
                 <option value="@d">@d</option>
             }
         </select>
+        <span class="ayuda-campo">Si es reparto a varios puntos, elige "Varios / Reparto".</span>
     </div>
 
     <div class="form-group">
@@ -132,6 +153,7 @@
         marcar("CodigoUnidad", "@(Model.CodigoUnidad > 0 ? Model.CodigoUnidad.ToString() : "")");
         marcar("DniChofer", "@Model.DniChofer");
         marcar("DniAyudante", "@Model.DniAyudante");
+        marcar("DniAyudante2", "@Model.DniAyudante2");
         marcar("PuntoInicio", "@Model.PuntoInicio");
         marcar("PuntoFin", "@Model.PuntoFin");
 
@@ -161,14 +183,17 @@
 
         function actualizar() {
             var cliente = textoSeleccionado('Ruc') || valor('ClienteOtro');
+            var doblete = document.querySelector('input[name="EsDoblete"]');
             var lineas = [
                 ['📅', 'Fecha', valor('Fecha')],
                 ['⏰', 'Salida de cochera', valor('HoraSalidaCochera')],
                 ['🤝', 'Cita', valor('HoraCita')],
+                ['🔁', 'Doblete', (doblete && doblete.checked) ? 'Sí' : ''],
                 ['🏢', 'Cliente', cliente],
                 ['🚚', 'Unidad', textoSeleccionado('CodigoUnidad')],
                 ['🚛', 'Chofer', textoSeleccionado('DniChofer')],
-                ['🧰', 'Ayudante', textoSeleccionado('DniAyudante')],
+                ['🧰', 'Ayudante 1', textoSeleccionado('DniAyudante')],
+                ['🧰', 'Ayudante 2', textoSeleccionado('DniAyudante2')],
                 ['📍', 'Ruta', (valor('PuntoInicio') || '?') + ' ➜ ' + (valor('PuntoFin') || '?')],
                 ['📌', 'Dirección', valor('Direccion')],
                 ['📝', 'Nota', valor('Observaciones')]

@@ -111,6 +111,20 @@ public class RecorridoRepository
         return await db.QueryAsync<OpcionSelect>(sql);
     }
 
+    // Para elegir ayudante en Planificar rutas: cualquier empleado activo que sea
+    // chofer o ayudante (un chofer tambien puede ir de ayudante en una ruta).
+    public async Task<IEnumerable<OpcionSelect>> ObtenerPersonalAsync()
+    {
+        using var db = _conexion.CrearConexion();
+        var sql = @"SELECT DISTINCT e.Dni AS Codigo, CONCAT(e.Nombres, ' ', e.Apellidos) AS Texto
+                    FROM Empleado e
+                    WHERE e.Estado = 'Activo'
+                      AND (EXISTS (SELECT 1 FROM Conductor c WHERE c.Dni = e.Dni)
+                        OR EXISTS (SELECT 1 FROM Asistente a WHERE a.Dni = e.Dni))
+                    ORDER BY e.Nombres";
+        return await db.QueryAsync<OpcionSelect>(sql);
+    }
+
     public async Task<IEnumerable<OpcionSelect>> ObtenerUnidadesAsync()
     {
         using var db = _conexion.CrearConexion();

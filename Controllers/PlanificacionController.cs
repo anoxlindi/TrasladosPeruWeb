@@ -37,7 +37,8 @@ public class PlanificacionController : Controller
         return View(rutas);
     }
 
-    // POST /Planificacion/EnviarWhatsApp -> envia el mensaje al chofer o al ayudante sin salir de la pagina
+    // POST /Planificacion/EnviarWhatsApp -> envia el mensaje al chofer o a un ayudante sin salir de la pagina
+    // destino: "chofer", "ayudante1" o "ayudante2"
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EnviarWhatsApp(long id, string destino)
@@ -53,14 +54,19 @@ public class PlanificacionController : Controller
             return Json(new { ok = false, mensaje = "La ruta ya no existe." });
         }
 
-        var paraChofer = destino == "chofer";
-        if (!paraChofer && string.IsNullOrWhiteSpace(ruta.Ayudante))
+        string? telefono = destino switch
         {
-            return Json(new { ok = false, mensaje = "Esta ruta no tiene ayudante." });
+            "chofer" => ruta.TelefonoChofer,
+            "ayudante1" => ruta.TelefonoAyudante,
+            "ayudante2" => ruta.TelefonoAyudante2,
+            _ => null
+        };
+        if (telefono is null)
+        {
+            return Json(new { ok = false, mensaje = "Esta ruta no tiene esa persona asignada." });
         }
 
-        var telefono = paraChofer ? ruta.TelefonoChofer : ruta.TelefonoAyudante;
-        var (ok, detalle) = await _whatsapp.EnviarRutaAsync(telefono, MensajesRuta.Parametros(ruta, paraChofer));
+        var (ok, detalle) = await _whatsapp.EnviarRutaAsync(telefono, MensajesRuta.Parametros(ruta, destino));
         return Json(new { ok, mensaje = ok ? "Enviado" : detalle });
     }
 
@@ -146,7 +152,8 @@ public class PlanificacionController : Controller
         var encabezados = new[]
         {
             "Codigo", "Fecha", "Salida de cochera", "Hora de cita", "Cliente", "Placa",
-            "Chofer", "Telefono chofer", "Ayudante", "Telefono ayudante",
+            "Doblete", "Chofer", "Telefono chofer", "Ayudante 1", "Telefono ayudante 1",
+            "Ayudante 2", "Telefono ayudante 2",
             "Punto inicio", "Punto final", "Direccion", "Observaciones"
         };
         for (int i = 0; i < encabezados.Length; i++)
@@ -166,14 +173,17 @@ public class PlanificacionController : Controller
                 : "-";
             hoja.Cell(fila, 5).Value = r.Cliente ?? "-";
             hoja.Cell(fila, 6).Value = r.Placa.Trim();
-            hoja.Cell(fila, 7).Value = r.Chofer ?? "-";
-            hoja.Cell(fila, 8).Value = r.TelefonoChofer?.Trim() ?? "-";
-            hoja.Cell(fila, 9).Value = r.Ayudante ?? "-";
-            hoja.Cell(fila, 10).Value = r.TelefonoAyudante?.Trim() ?? "-";
-            hoja.Cell(fila, 11).Value = r.PuntoInicio ?? "-";
-            hoja.Cell(fila, 12).Value = r.PuntoFin ?? "-";
-            hoja.Cell(fila, 13).Value = r.Direccion ?? "-";
-            hoja.Cell(fila, 14).Value = r.Observaciones ?? "-";
+            hoja.Cell(fila, 7).Value = r.EsDoblete ? "Sí" : "No";
+            hoja.Cell(fila, 8).Value = r.Chofer ?? "-";
+            hoja.Cell(fila, 9).Value = r.TelefonoChofer?.Trim() ?? "-";
+            hoja.Cell(fila, 10).Value = r.Ayudante ?? "-";
+            hoja.Cell(fila, 11).Value = r.TelefonoAyudante?.Trim() ?? "-";
+            hoja.Cell(fila, 12).Value = r.Ayudante2 ?? "-";
+            hoja.Cell(fila, 13).Value = r.TelefonoAyudante2?.Trim() ?? "-";
+            hoja.Cell(fila, 14).Value = r.PuntoInicio ?? "-";
+            hoja.Cell(fila, 15).Value = r.PuntoFin ?? "-";
+            hoja.Cell(fila, 16).Value = r.Direccion ?? "-";
+            hoja.Cell(fila, 17).Value = r.Observaciones ?? "-";
             fila++;
         }
         hoja.Columns().AdjustToContents();
@@ -206,9 +216,14 @@ public class PlanificacionController : Controller
         {
             ModelState.AddModelError("", "Selecciona un cliente, o escribe el nombre si es otro.");
         }
-        if (!string.IsNullOrWhiteSpace(m.DniAyudante) && m.DniAyudante.Trim() == m.DniChofer?.Trim())
+
+        // El chofer y los 2 ayudantes no pueden repetirse entre si
+        var personas = new[] { m.DniChofer?.Trim(), m.DniAyudante?.Trim(), m.DniAyudante2?.Trim() }
+            .Where(d => !string.IsNullOrWhiteSpace(d))
+            .ToList();
+        if (personas.Count != personas.Distinct().Count())
         {
-            ModelState.AddModelError("", "El chofer y el ayudante no pueden ser la misma persona.");
+            ModelState.AddModelError("", "El chofer y los ayudantes no pueden repetirse en la misma ruta.");
         }
     }
 
@@ -216,8 +231,11 @@ public class PlanificacionController : Controller
     {
         ViewBag.Clientes = await _catalogos.ObtenerClientesAsync();
         ViewBag.Choferes = await _catalogos.ObtenerChoferesAsync();
-        ViewBag.Ayudantes = await _catalogos.ObtenerAyudantesAsync();
+        // El ayudante puede ser cualquier chofer o ayudante activo (un chofer tambien puede ir de ayudante)
+        ViewBag.Ayudantes = await _catalogos.ObtenerPersonalAsync();
         ViewBag.Unidades = await _catalogos.ObtenerUnidadesAsync();
         ViewBag.Distritos = Distritos.Lista;
+        // Solo para el punto de llegada: ademas de los distritos, la opcion "Varios / Reparto"
+        ViewBag.DistritosDestino = Distritos.Lista.Append("Varios / Reparto").ToArray();
     }
 }

@@ -235,6 +235,38 @@ body {
     padding: 24px;
 }
 
+/* ---------- Planificar rutas: extras ---------- */
+.form-check-group {
+    flex-direction: row;
+    align-items: center;
+    grid-column: 1 / -1;
+}
+
+.check-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--azul-oscuro);
+    cursor: pointer;
+}
+
+.check { width: 18px; height: 18px; accent-color: var(--azul); cursor: pointer; }
+
+.ayuda-campo {
+    font-size: 0.78rem;
+    color: var(--gris);
+    font-weight: 400;
+}
+
+.ruta-card.ruta-doblete { border-left-color: #f5a623; }
+
+.chip-doblete {
+    background: #fff4e0;
+    color: #b36b00;
+}
+
 /* ---------- Planificar rutas ---------- */
 .atajos {
     display: flex;

@@ -23,12 +23,17 @@ public class PlanificacionRepository
                p.DniAyudante,
                ea.Nombres + ' ' + ea.Apellidos AS Ayudante,
                ea.Telefono AS TelefonoAyudante,
+               p.DniAyudante2,
+               ea2.Nombres + ' ' + ea2.Apellidos AS Ayudante2,
+               ea2.Telefono AS TelefonoAyudante2,
+               p.EsDoblete,
                p.PuntoInicio, p.PuntoFin, p.Direccion, p.Observaciones
         FROM RutaPlanificada p
         JOIN UnidadTransporte u ON u.CodigoUnidad = p.CodigoUnidad
         LEFT JOIN Cliente cl ON cl.Ruc = p.Ruc
         LEFT JOIN Empleado ec ON ec.Dni = p.DniChofer
-        LEFT JOIN Empleado ea ON ea.Dni = p.DniAyudante";
+        LEFT JOIN Empleado ea ON ea.Dni = p.DniAyudante
+        LEFT JOIN Empleado ea2 ON ea2.Dni = p.DniAyudante2";
 
     public async Task<IEnumerable<RutaPlanificadaDto>> ListarAsync(FiltroPlanificacion filtro)
     {
@@ -63,8 +68,8 @@ public class PlanificacionRepository
     {
         using var db = _conexion.CrearConexion();
         var sql = @"SELECT CodigoPlan, Fecha, HoraSalidaCochera, HoraCita, Ruc, ClienteOtro,
-                           CodigoUnidad, DniChofer, DniAyudante, PuntoInicio, PuntoFin,
-                           Direccion, Observaciones
+                           CodigoUnidad, DniChofer, DniAyudante, DniAyudante2, EsDoblete,
+                           PuntoInicio, PuntoFin, Direccion, Observaciones
                     FROM RutaPlanificada
                     WHERE CodigoPlan = @codigoPlan";
         return await db.QueryFirstOrDefaultAsync<RutaPlanificadaForm>(sql, new { codigoPlan });
@@ -75,10 +80,12 @@ public class PlanificacionRepository
         using var db = _conexion.CrearConexion();
         var sql = @"INSERT INTO RutaPlanificada
                         (Fecha, HoraSalidaCochera, HoraCita, Ruc, ClienteOtro, CodigoUnidad,
-                         DniChofer, DniAyudante, PuntoInicio, PuntoFin, Direccion, Observaciones)
+                         DniChofer, DniAyudante, DniAyudante2, EsDoblete,
+                         PuntoInicio, PuntoFin, Direccion, Observaciones)
                     VALUES
                         (@Fecha, @HoraSalidaCochera, @HoraCita, @Ruc, @ClienteOtro, @CodigoUnidad,
-                         @DniChofer, @DniAyudante, @PuntoInicio, @PuntoFin, @Direccion, @Observaciones)";
+                         @DniChofer, @DniAyudante, @DniAyudante2, @EsDoblete,
+                         @PuntoInicio, @PuntoFin, @Direccion, @Observaciones)";
         await db.ExecuteAsync(sql, ParametrosDe(f));
     }
 
@@ -88,7 +95,8 @@ public class PlanificacionRepository
         var sql = @"UPDATE RutaPlanificada SET
                         Fecha = @Fecha, HoraSalidaCochera = @HoraSalidaCochera, HoraCita = @HoraCita,
                         Ruc = @Ruc, ClienteOtro = @ClienteOtro, CodigoUnidad = @CodigoUnidad,
-                        DniChofer = @DniChofer, DniAyudante = @DniAyudante,
+                        DniChofer = @DniChofer, DniAyudante = @DniAyudante, DniAyudante2 = @DniAyudante2,
+                        EsDoblete = @EsDoblete,
                         PuntoInicio = @PuntoInicio, PuntoFin = @PuntoFin,
                         Direccion = @Direccion, Observaciones = @Observaciones
                     WHERE CodigoPlan = @CodigoPlan";
@@ -116,6 +124,8 @@ public class PlanificacionRepository
         p.Add("CodigoUnidad", f.CodigoUnidad);
         p.Add("DniChofer", f.DniChofer);
         p.Add("DniAyudante", string.IsNullOrWhiteSpace(f.DniAyudante) ? null : f.DniAyudante);
+        p.Add("DniAyudante2", string.IsNullOrWhiteSpace(f.DniAyudante2) ? null : f.DniAyudante2);
+        p.Add("EsDoblete", f.EsDoblete);
         p.Add("PuntoInicio", f.PuntoInicio);
         p.Add("PuntoFin", f.PuntoFin);
         p.Add("Direccion", string.IsNullOrWhiteSpace(f.Direccion) ? null : f.Direccion.Trim());
