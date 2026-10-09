@@ -84,6 +84,10 @@ public class RecorridoController : Controller
         {
             ModelState.AddModelError("", "La fecha final debe ser posterior a la fecha de inicio.");
         }
+        if (modelo.Peso <= 0)
+        {
+            ModelState.AddModelError("", "Indica el peso de la carga (debe ser mayor a 0).");
+        }
         if (modelo.FuePeaje && (modelo.CantidadPeajes < 1 || modelo.CantidadPeajes > 4))
         {
             ModelState.AddModelError("", "La cantidad de peajes debe estar entre 1 y 4.");
@@ -148,6 +152,10 @@ public class RecorridoController : Controller
         if (modelo.FechaFin <= modelo.FechaInicio)
         {
             ModelState.AddModelError("", "La fecha final debe ser posterior a la fecha de inicio.");
+        }
+        if (modelo.Peso <= 0)
+        {
+            ModelState.AddModelError("", "Indica el peso de la carga (debe ser mayor a 0).");
         }
         if (modelo.FuePeaje && (modelo.CantidadPeajes < 1 || modelo.CantidadPeajes > 4))
         {
