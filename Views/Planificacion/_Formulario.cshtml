@@ -124,14 +124,18 @@
 
     <div class="form-group">
         <label>🏁 Punto final</label>
-        <select asp-for="PuntoFin" class="input">
+        <select id="selPuntoFin" class="input">
             <option value="">-- Selecciona un distrito --</option>
             @foreach (var d in distritosDestino)
             {
                 <option value="@d">@d</option>
             }
+            <option value="__otros__">Otros (escribir)</option>
         </select>
-        <span class="ayuda-campo">Si es reparto a varios puntos, elige "Varios / Reparto".</span>
+        <input type="text" id="txtPuntoFinOtro" class="input" maxlength="60"
+               placeholder="Escribe el punto de llegada" style="display:none; margin-top:6px;" />
+        <input asp-for="PuntoFin" type="hidden" id="PuntoFin" />
+        <span class="ayuda-campo">Si es reparto a varios puntos, elige "Varios / Reparto". Si no coincide con ningún distrito, elige "Otros" y escríbelo.</span>
     </div>
 
     <div class="form-group">
@@ -187,13 +191,17 @@
 
         <div class="form-group">
             <label>🏁 Punto final (2do viaje)</label>
-            <select asp-for="PuntoFin2" class="input">
+            <select id="selPuntoFin2" class="input">
                 <option value="">-- Selecciona un distrito --</option>
                 @foreach (var d in distritosDestino)
                 {
                     <option value="@d">@d</option>
                 }
+                <option value="__otros__">Otros (escribir)</option>
             </select>
+            <input type="text" id="txtPuntoFin2Otro" class="input" maxlength="60"
+                   placeholder="Escribe el punto de llegada" style="display:none; margin-top:6px;" />
+            <input asp-for="PuntoFin2" type="hidden" id="PuntoFin2" />
         </div>
 
         <div class="form-group">
@@ -218,10 +226,8 @@
         marcar("DniAyudante", "@Model.DniAyudante");
         marcar("DniAyudante2", "@Model.DniAyudante2");
         marcar("PuntoInicio", "@Model.PuntoInicio");
-        marcar("PuntoFin", "@Model.PuntoFin");
         marcar("Ruc2", "@Model.Ruc2");
         marcar("PuntoInicio2", "@Model.PuntoInicio2");
-        marcar("PuntoFin2", "@Model.PuntoFin2");
 
         var otroBox = document.getElementById('otroClienteBox');
         var rucSelect = document.querySelector('select[name="Ruc"]');
@@ -244,6 +250,40 @@
             chkDoblete.addEventListener('change', actualizarBloqueViaje2);
             actualizarBloqueViaje2();
         }
+
+        // Punto final: si el distrito no esta en la lista, se puede escribir libremente ("Otros")
+        function configurarPuntoLibre(selId, cajaId, ocultoId, valorInicial) {
+            var sel = document.getElementById(selId);
+            var caja = document.getElementById(cajaId);
+            var oculto = document.getElementById(ocultoId);
+            if (!sel || !caja || !oculto) return;
+
+            function mostrarCaja(mostrar) { caja.style.display = mostrar ? 'block' : 'none'; }
+
+            sel.addEventListener('change', function () {
+                if (sel.value === '__otros__') {
+                    mostrarCaja(true);
+                    oculto.value = caja.value;
+                    caja.focus();
+                } else {
+                    mostrarCaja(false);
+                    oculto.value = sel.value;
+                }
+            });
+            caja.addEventListener('input', function () { oculto.value = caja.value; });
+
+            if (valorInicial) {
+                sel.value = valorInicial;
+                if (sel.value !== valorInicial) {
+                    sel.value = '__otros__';
+                    caja.value = valorInicial;
+                    mostrarCaja(true);
+                }
+                oculto.value = valorInicial;
+            }
+        }
+        configurarPuntoLibre('selPuntoFin', 'txtPuntoFinOtro', 'PuntoFin', "@Model.PuntoFin");
+        configurarPuntoLibre('selPuntoFin2', 'txtPuntoFin2Otro', 'PuntoFin2', "@Model.PuntoFin2");
     })();
 </script>
 

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="130" viewBox="0 0 240 130">
+  <g fill="#dbe7f8" fill-opacity="0.9">
+    <!-- camion -->
+    <rect x="14" y="42" width="78" height="34" rx="3"/>
+    <path d="M92 50 h22 l16 18 v8 h-38 z"/>
+    <rect x="104" y="54" width="12" height="9" fill="#f4f6f9"/>
+    <circle cx="36" cy="80" r="9"/>
+    <circle cx="74" cy="80" r="9"/>
+    <circle cx="112" cy="80" r="9"/>
+    <!-- carro -->
+    <path d="M150 82 h50 c2 0 3 -1 4 -3 l5 -12 c1 -2 0 -4 -2 -4 h-10 l-6 -9 c-1 -1 -2 -2 -4 -2 h-24 c-2 0 -3 1 -4 2 l-6 9 h-3 c-2 0 -3 2 -2 4 z"/>
+    <rect x="167" y="54" width="20" height="9" fill="#f4f6f9"/>
+    <circle cx="163" cy="86" r="7"/>
+    <circle cx="197" cy="86" r="7"/>
+  </g>
+</svg>
